@@ -1,309 +1,348 @@
 import { useGetSchoolKpis, useGetAttendanceTrend, useGetRiskByClass, useGetTopAtRiskStudents } from "@workspace/api-client-react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { Users, AlertTriangle, Activity, Bell, TrendingUp, TrendingDown, Plus, BookOpen, GraduationCap, ShieldCheck } from "lucide-react";
+import {
+  LineChart, Line, BarChart, Bar, XAxis, YAxis,
+  CartesianGrid, Tooltip, ResponsiveContainer,
+} from "recharts";
+import { Users, ArrowRight, GraduationCap, BookOpen, ShieldCheck, Bell, ArrowUpRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 
-const tierStyles: Record<string, { bg: string; text: string; label: string }> = {
-  critical: { bg: "bg-red-100", text: "text-red-700", label: "CRITICAL" },
-  high:     { bg: "bg-orange-100", text: "text-orange-700", label: "HIGH" },
-  medium:   { bg: "bg-amber-100", text: "text-amber-700", label: "MEDIUM" },
-  low:      { bg: "bg-green-100", text: "text-green-700", label: "LOW" },
+const DARK = "#0B2819";
+
+const tierMeta: Record<string, { dot: string; label: string; rowBg: string }> = {
+  critical: { dot: "#ef4444", label: "Critical",  rowBg: "#fef2f2" },
+  high:     { dot: "#f97316", label: "High",      rowBg: "#fff7ed" },
+  medium:   { dot: "#f59e0b", label: "Medium",    rowBg: "#fffbeb" },
+  low:      { dot: "#10b981", label: "Low",       rowBg: "transparent" },
 };
 
-const kpiConfig = [
-  {
-    key: "attendanceRate30d",
-    title: "Attendance Rate",
-    sub: "Last 30 days",
-    icon: Activity,
-    format: (v: number) => `${v.toFixed(1)}%`,
-    accentColor: "#10b981",
-  },
-  {
-    key: "studentsAtRiskCount",
-    title: "Students at Risk",
-    sub: (kpis: Record<string, number>) => `${kpis.studentsAtRiskPct?.toFixed(1)}% of total`,
-    icon: AlertTriangle,
-    format: (v: number) => String(v),
-    accentColor: "#ef4444",
-  },
-  {
-    key: "contentEngagement7d",
-    title: "Engagement (7d)",
-    sub: "Content interactions",
-    icon: Users,
-    format: (v: number) => String(v),
-    accentColor: "#3b82f6",
-  },
-  {
-    key: "notificationsSent30d",
-    title: "Notifications",
-    sub: "Sent last 30 days",
-    icon: Bell,
-    format: (v: number) => String(v),
-    accentColor: "#8b5cf6",
-  },
+const quickActions = [
+  { label: "New class",         href: "/admin/classes",       icon: GraduationCap },
+  { label: "New subject",       href: "/admin/subjects",      icon: BookOpen },
+  { label: "New user",          href: "/admin/users",         icon: ShieldCheck },
+  { label: "Send notification", href: "/admin/notifications", icon: Bell },
 ];
 
-const quickActions = [
-  {
-    label: "Nouvelle classe",
-    description: "Créer un groupe d'élèves",
-    href: "/admin/classes",
-    icon: GraduationCap,
-    color: "from-blue-500 to-indigo-600",
-    bg: "bg-blue-50 hover:bg-blue-100",
-    text: "text-blue-700",
-    border: "border-blue-200",
-  },
-  {
-    label: "Nouvelle matière",
-    description: "Ajouter au programme",
-    href: "/admin/subjects",
-    icon: BookOpen,
-    color: "from-emerald-500 to-teal-600",
-    bg: "bg-emerald-50 hover:bg-emerald-100",
-    text: "text-emerald-700",
-    border: "border-emerald-200",
-  },
-  {
-    label: "Nouvel utilisateur",
-    description: "Compte admin, prof ou élève",
-    href: "/admin/users",
-    icon: ShieldCheck,
-    color: "from-violet-500 to-purple-600",
-    bg: "bg-violet-50 hover:bg-violet-100",
-    text: "text-violet-700",
-    border: "border-violet-200",
-  },
-  {
-    label: "Envoyer notification",
-    description: "Alertes parents & élèves",
-    href: "/admin/notifications",
-    icon: Bell,
-    color: "from-amber-500 to-orange-600",
-    bg: "bg-amber-50 hover:bg-amber-100",
-    text: "text-amber-700",
-    border: "border-amber-200",
-  },
-];
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", color: "#9ca3af", textTransform: "uppercase", marginBottom: "14px" }}>
+      {children}
+    </p>
+  );
+}
 
 export default function AdminDashboard() {
-  const { data: kpis, isLoading: isLoadingKpis } = useGetSchoolKpis();
-  const { data: trend, isLoading: isLoadingTrend } = useGetAttendanceTrend({ weeks: 12 });
-  const { data: riskByClass, isLoading: isLoadingRisk } = useGetRiskByClass();
-  const { data: topAtRisk, isLoading: isLoadingTopRisk } = useGetTopAtRiskStudents({ limit: 10 });
+  const { data: kpis, isLoading: lk } = useGetSchoolKpis();
+  const { data: trend, isLoading: lt } = useGetAttendanceTrend({ weeks: 12 });
+  const { data: riskByClass, isLoading: lr } = useGetRiskByClass();
+  const { data: topAtRisk, isLoading: ltr } = useGetTopAtRiskStudents({ limit: 10 });
+  const loading = lk || lt || lr || ltr;
 
-  if (isLoadingKpis || isLoadingTrend || isLoadingRisk || isLoadingTopRisk) {
+  const today = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+
+  if (loading) {
     return (
-      <div className="space-y-6">
-        <Skeleton className="h-9 w-48 rounded-lg" />
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-24 rounded-2xl" />)}
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-28 rounded-2xl" />)}
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+        <Skeleton className="h-8 w-52 rounded-lg" />
+        <Skeleton className="h-36 rounded-2xl" />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
           <Skeleton className="h-80 rounded-2xl" />
           <Skeleton className="h-80 rounded-2xl" />
         </div>
-        <Skeleton className="h-64 rounded-2xl" />
+        <Skeleton className="h-72 rounded-2xl" />
       </div>
     );
   }
 
-  const kpisData = kpis as Record<string, number> | undefined;
+  const d = kpis as Record<string, number> | undefined;
+  const attendance = d?.attendanceRate30d ?? 0;
+  const atRisk = d?.studentsAtRiskCount ?? 0;
+  const atRiskPct = d?.studentsAtRiskPct ?? 0;
+  const engagement = d?.contentEngagement7d ?? 0;
+  const notifications = d?.notificationsSent30d ?? 0;
 
   return (
-    <div className="space-y-6 pb-8">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Vue d'ensemble</h1>
-        <p className="text-gray-500 text-sm mt-0.5">Performance de l'établissement</p>
-      </div>
+    <div style={{ display: "flex", flexDirection: "column", gap: "28px", paddingBottom: "40px" }}>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {kpiConfig.map((cfg, i) => {
-          const value = kpisData?.[cfg.key] ?? 0;
-          const formatted = cfg.format(value);
-          const sub = typeof cfg.sub === "function" ? cfg.sub(kpisData ?? {}) : cfg.sub;
-          return (
-            <motion.div key={cfg.key} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}>
-              <Card className="overflow-hidden border-0 shadow-sm bg-white">
-                <div className="h-1.5 w-full" style={{ backgroundColor: cfg.accentColor }} />
-                <CardContent className="pt-5 pb-5">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">{cfg.title}</p>
-                      <p className="text-3xl font-bold text-gray-900 mt-1.5">{formatted}</p>
-                      <p className="text-xs text-gray-400 mt-1">{sub}</p>
-                    </div>
-                    <div className="p-2.5 rounded-xl shrink-0" style={{ backgroundColor: cfg.accentColor + "18" }}>
-                      <cfg.icon className="h-5 w-5" style={{ color: cfg.accentColor }} />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          );
-        })}
-      </div>
-
-      {/* Quick Actions */}
-      <div>
-        <div className="flex items-center gap-2 mb-3">
-          <Plus className="h-4 w-4 text-muted-foreground" />
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Actions rapides</h2>
+      {/* ── Page header ── */}
+      <motion.div
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: "16px", flexWrap: "wrap" }}
+      >
+        <div>
+          <h1 style={{ fontSize: "22px", fontWeight: 800, letterSpacing: "-0.02em", color: "#111827", fontFamily: "'Sora', sans-serif", lineHeight: 1.1 }}>
+            School Overview
+          </h1>
+          <p style={{ fontSize: "13px", color: "#9ca3af", marginTop: "5px" }}>{today}</p>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {quickActions.map((action, i) => (
-            <motion.div
-              key={action.href}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 + i * 0.06 }}
-            >
-              <Link href={action.href}>
-                <button className={`w-full text-left p-4 rounded-2xl border-2 transition-all cursor-pointer ${action.bg} ${action.border} group`}>
-                  <div className={`inline-flex p-2 rounded-xl bg-gradient-to-br ${action.color} mb-3 shadow-sm group-hover:scale-105 transition-transform`}>
-                    <action.icon className="h-4 w-4 text-white" />
-                  </div>
-                  <p className={`text-sm font-bold leading-tight ${action.text}`}>{action.label}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{action.description}</p>
-                </button>
-              </Link>
-            </motion.div>
+
+        {/* Quick-action pill row */}
+        <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+          {quickActions.map((a) => (
+            <Link key={a.href} href={a.href}>
+              <button
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: "6px",
+                  padding: "6px 12px", borderRadius: "20px",
+                  border: "1px solid #e5e7eb", background: "white",
+                  fontSize: "12px", fontWeight: 600, color: "#374151",
+                  cursor: "pointer", transition: "all 0.12s",
+                  whiteSpace: "nowrap",
+                }}
+                onMouseEnter={e => {
+                  const b = e.currentTarget;
+                  b.style.borderColor = DARK;
+                  b.style.backgroundColor = DARK;
+                  b.style.color = "white";
+                }}
+                onMouseLeave={e => {
+                  const b = e.currentTarget;
+                  b.style.borderColor = "#e5e7eb";
+                  b.style.backgroundColor = "white";
+                  b.style.color = "#374151";
+                }}
+              >
+                <a.icon style={{ width: "11px", height: "11px" }} />
+                {a.label}
+              </button>
+            </Link>
           ))}
         </div>
-      </div>
+      </motion.div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <Card className="border-0 shadow-sm bg-white">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base font-semibold text-gray-800">Attendance Trend</CardTitle>
-              <span className="flex items-center gap-1 text-xs text-emerald-600 font-medium bg-emerald-50 px-2 py-0.5 rounded-full">
-                <TrendingUp className="h-3 w-3" /> 12 weeks
-              </span>
+      {/* ── KPI Billboard ── */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05 }}
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1.4fr 1fr 1fr 1fr",
+          borderRadius: "16px",
+          overflow: "hidden",
+          border: "1px solid #e5e7eb",
+        }}
+      >
+        {/* Featured metric — dark */}
+        <div style={{ backgroundColor: DARK, padding: "28px 28px 24px", position: "relative", overflow: "hidden" }}>
+          {/* Dot texture */}
+          <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)", backgroundSize: "20px 20px", pointerEvents: "none" }} />
+          <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", color: "#4d7a62", textTransform: "uppercase", position: "relative" }}>
+            Attendance Rate
+          </p>
+          <p style={{ fontSize: "52px", fontWeight: 800, color: "white", fontFamily: "'Sora', sans-serif", lineHeight: 1, marginTop: "8px", position: "relative", letterSpacing: "-0.03em" }}>
+            {attendance.toFixed(1)}<span style={{ fontSize: "28px", color: "#4ade80", marginLeft: "2px" }}>%</span>
+          </p>
+          <p style={{ fontSize: "12px", color: "#4d7a62", marginTop: "10px", position: "relative" }}>
+            30-day moving average
+          </p>
+          <div style={{ position: "relative", marginTop: "16px", display: "flex", alignItems: "center", gap: "6px" }}>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "11px", fontWeight: 600, color: "#4ade80", backgroundColor: "rgba(74,222,128,0.1)", padding: "3px 8px", borderRadius: "20px" }}>
+              <ArrowUpRight style={{ width: "10px", height: "10px" }} />
+              On track
+            </span>
+          </div>
+        </div>
+
+        {/* Supporting metrics */}
+        {[
+          { label: "Students at Risk", value: String(atRisk), sub: `${atRiskPct.toFixed(1)}% of enrolment`, alert: atRisk > 10 },
+          { label: "Engagement (7d)", value: String(engagement), sub: "Content interactions", alert: false },
+          { label: "Notifications", value: String(notifications), sub: "Sent this month", alert: false },
+        ].map((m, i) => (
+          <div
+            key={m.label}
+            style={{
+              padding: "28px 22px 24px",
+              backgroundColor: "white",
+              borderLeft: "1px solid #f3f4f6",
+            }}
+          >
+            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", color: m.alert ? "#ef4444" : "#9ca3af", textTransform: "uppercase" }}>
+              {m.label}
+            </p>
+            <p style={{
+              fontSize: i === 0 ? "44px" : "40px",
+              fontWeight: 800,
+              color: m.alert ? "#ef4444" : "#111827",
+              fontFamily: "'Sora', sans-serif",
+              lineHeight: 1,
+              marginTop: "10px",
+              letterSpacing: "-0.03em",
+            }}>
+              {m.value}
+            </p>
+            <p style={{ fontSize: "12px", color: "#9ca3af", marginTop: "10px" }}>{m.sub}</p>
+          </div>
+        ))}
+      </motion.div>
+
+      {/* ── Charts ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+
+        {/* Attendance trend */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.12 }}
+          style={{ backgroundColor: "white", borderRadius: "16px", border: "1px solid #e5e7eb", overflow: "hidden" }}
+        >
+          <div style={{ padding: "22px 24px 0", display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+            <div>
+              <p style={{ fontSize: "14px", fontWeight: 700, color: "#111827", fontFamily: "'Sora', sans-serif" }}>Attendance Trend</p>
+              <p style={{ fontSize: "11px", color: "#9ca3af", marginTop: "3px" }}>12-week rolling — % present per week</p>
             </div>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={240}>
-              <LineChart data={trend} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                <XAxis dataKey="weekLabel" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "#9ca3af" }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "#9ca3af" }} domain={[50, 100]} />
+            <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", color: "#4d7a62", backgroundColor: "#f0fdf4", padding: "4px 9px", borderRadius: "20px", textTransform: "uppercase" }}>
+              Weekly
+            </span>
+          </div>
+          <div style={{ padding: "8px 8px 16px" }}>
+            <ResponsiveContainer width="100%" height={220}>
+              <LineChart data={trend} margin={{ top: 10, right: 12, left: -24, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="2 4" vertical={false} stroke="#f3f4f6" />
+                <XAxis dataKey="weekLabel" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "#d1d5db" }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "#d1d5db" }} domain={[50, 100]} />
                 <Tooltip
-                  contentStyle={{ borderRadius: 10, border: "none", boxShadow: "0 4px 20px rgba(0,0,0,0.1)", fontSize: 12 }}
+                  contentStyle={{ borderRadius: "10px", border: "1px solid #f3f4f6", boxShadow: "0 8px 24px rgba(0,0,0,0.08)", fontSize: "12px", fontFamily: "'Inter', sans-serif" }}
                   formatter={(v: number) => [`${v}%`, "Attendance"]}
                 />
-                <Line type="monotone" dataKey="rate" stroke="hsl(161 69% 37%)" strokeWidth={2.5}
-                  dot={{ r: 3, fill: "hsl(161 69% 37%)", strokeWidth: 0 }}
-                  activeDot={{ r: 5, fill: "hsl(161 69% 37%)", strokeWidth: 0 }} />
+                <Line
+                  type="monotone" dataKey="rate" stroke="#0B2819" strokeWidth={2}
+                  dot={false}
+                  activeDot={{ r: 4, fill: "#0B2819", strokeWidth: 0 }}
+                />
               </LineChart>
             </ResponsiveContainer>
-          </CardContent>
-        </Card>
+          </div>
+        </motion.div>
 
-        <Card className="border-0 shadow-sm bg-white">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base font-semibold text-gray-800">Risk by Class</CardTitle>
-              <span className="flex items-center gap-1 text-xs text-red-600 font-medium bg-red-50 px-2 py-0.5 rounded-full">
-                <TrendingDown className="h-3 w-3" /> dropout risk
-              </span>
+        {/* Risk by class */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.17 }}
+          style={{ backgroundColor: "white", borderRadius: "16px", border: "1px solid #e5e7eb", overflow: "hidden" }}
+        >
+          <div style={{ padding: "22px 24px 0", display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+            <div>
+              <p style={{ fontSize: "14px", fontWeight: 700, color: "#111827", fontFamily: "'Sora', sans-serif" }}>Dropout Risk by Class</p>
+              <p style={{ fontSize: "11px", color: "#9ca3af", marginTop: "3px" }}>Stacked by risk tier — low to critical</p>
             </div>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={riskByClass} layout="vertical" margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f0f0f0" />
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              {[["#10b981", "Low"], ["#f59e0b", "Med"], ["#ef4444", "Crit"]].map(([color, label]) => (
+                <span key={label} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "10px", color: "#9ca3af", fontWeight: 600 }}>
+                  <span style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: color, display: "inline-block" }} />
+                  {label}
+                </span>
+              ))}
+            </div>
+          </div>
+          <div style={{ padding: "8px 8px 16px" }}>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={riskByClass} layout="vertical" margin={{ top: 10, right: 12, left: 4, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="2 4" horizontal={false} stroke="#f3f4f6" />
                 <XAxis type="number" hide />
-                <YAxis dataKey="className" type="category" axisLine={false} tickLine={false}
-                  tick={{ fontSize: 11, fill: "#9ca3af" }} width={70} />
+                <YAxis dataKey="className" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "#d1d5db" }} width={62} />
                 <Tooltip
-                  contentStyle={{ borderRadius: 10, border: "none", boxShadow: "0 4px 20px rgba(0,0,0,0.1)", fontSize: 12 }}
+                  contentStyle={{ borderRadius: "10px", border: "1px solid #f3f4f6", boxShadow: "0 8px 24px rgba(0,0,0,0.08)", fontSize: "12px" }}
                 />
-                <Bar dataKey="riskCounts.low" name="Low" stackId="a" fill="#10b981" radius={[0,0,0,0]} />
+                <Bar dataKey="riskCounts.low" name="Low" stackId="a" fill="#10b981" />
                 <Bar dataKey="riskCounts.medium" name="Medium" stackId="a" fill="#f59e0b" />
                 <Bar dataKey="riskCounts.high" name="High" stackId="a" fill="#f97316" />
-                <Bar dataKey="riskCounts.critical" name="Critical" stackId="a" fill="#ef4444" radius={[0,3,3,0]} />
+                <Bar dataKey="riskCounts.critical" name="Critical" stackId="a" fill="#ef4444" radius={[0, 3, 3, 0]} />
               </BarChart>
             </ResponsiveContainer>
-          </CardContent>
-        </Card>
+          </div>
+        </motion.div>
       </div>
 
-      {/* At-risk table */}
-      <Card className="border-0 shadow-sm bg-white overflow-hidden">
-        <CardHeader className="pb-3 border-b border-gray-50">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base font-semibold text-gray-800">Top Students at Risk</CardTitle>
-            <Link href="/admin/users">
-              <Button variant="ghost" size="sm" className="text-xs text-muted-foreground gap-1">
-                <Users className="h-3.5 w-3.5" /> Gérer les comptes
-              </Button>
-            </Link>
+      {/* ── At-risk briefing table ── */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.22 }}
+        style={{ backgroundColor: "white", borderRadius: "16px", border: "1px solid #e5e7eb", overflow: "hidden" }}
+      >
+        {/* Table header — editorial */}
+        <div style={{ padding: "22px 24px 18px", borderBottom: "1px solid #f9fafb", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px" }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: "10px" }}>
+            <span style={{ fontSize: "28px", fontWeight: 800, color: "#ef4444", fontFamily: "'Sora', sans-serif", lineHeight: 1, letterSpacing: "-0.03em" }}>
+              {topAtRisk?.filter(s => (s.tier ?? "low") !== "low").length ?? 0}
+            </span>
+            <span style={{ fontSize: "14px", fontWeight: 700, color: "#111827", fontFamily: "'Sora', sans-serif" }}>
+              students flagged for dropout risk
+            </span>
           </div>
-        </CardHeader>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <Link href="/admin/analytics">
+            <button
+              style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: 600, color: "#6b7280", background: "none", border: "1px solid #e5e7eb", padding: "6px 12px", borderRadius: "8px", cursor: "pointer", transition: "all 0.12s" }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = DARK; e.currentTarget.style.color = DARK; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = "#e5e7eb"; e.currentTarget.style.color = "#6b7280"; }}
+            >
+              Full analytics <ArrowRight style={{ width: "11px", height: "11px" }} />
+            </button>
+          </Link>
+        </div>
+
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
             <thead>
-              <tr className="bg-gray-50/80">
-                <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">#</th>
-                <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Student</th>
-                <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Class</th>
-                <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Risk</th>
-                <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Tier</th>
-                <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Key Factor</th>
+              <tr style={{ borderBottom: "1px solid #f3f4f6" }}>
+                {["#", "Student", "Class", "Risk score", "Tier", "Key factor"].map(h => (
+                  <th key={h} style={{ padding: "10px 20px", textAlign: "left", fontSize: "10px", fontWeight: 700, color: "#d1d5db", letterSpacing: "0.08em", textTransform: "uppercase", whiteSpace: "nowrap" }}>
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody>
               {topAtRisk?.map((student, idx) => {
-                const ts = tierStyles[student.tier ?? "low"] ?? tierStyles.low;
+                const tier = student.tier ?? "low";
+                const tm = tierMeta[tier] ?? tierMeta.low;
                 const score = Math.round(student.score * 100);
+                const initial = student.studentName?.charAt(0) ?? "?";
                 return (
-                  <tr key={student.studentId} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="px-5 py-3.5 text-gray-400 text-xs font-mono">{idx + 1}</td>
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
-                          {student.studentName?.charAt(0)}
+                  <tr
+                    key={student.studentId}
+                    style={{ borderBottom: "1px solid #f9fafb", backgroundColor: idx % 2 === 0 ? "white" : "#fafafa", transition: "background 0.1s" }}
+                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = tm.rowBg || "#f9fafb")}
+                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = idx % 2 === 0 ? "white" : "#fafafa")}
+                  >
+                    <td style={{ padding: "12px 20px", color: "#d1d5db", fontSize: "11px", fontFamily: "monospace", fontWeight: 500 }}>{idx + 1}</td>
+                    <td style={{ padding: "12px 20px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                        <div style={{ width: "28px", height: "28px", borderRadius: "50%", backgroundColor: DARK, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: 700, color: "#a7f3d0", flexShrink: 0, fontFamily: "'Sora', sans-serif" }}>
+                          {initial}
                         </div>
-                        <span className="font-medium text-gray-900">{student.studentName}</span>
+                        <span style={{ fontWeight: 600, color: "#111827" }}>{student.studentName}</span>
                       </div>
                     </td>
-                    <td className="px-5 py-3.5 text-gray-500">{student.className}</td>
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-2">
-                        <div className="w-16 h-1.5 rounded-full bg-gray-100 overflow-hidden">
-                          <div className="h-full rounded-full" style={{
-                            width: `${score}%`,
-                            backgroundColor: score > 80 ? "#ef4444" : score > 60 ? "#f97316" : score > 30 ? "#f59e0b" : "#10b981"
-                          }} />
+                    <td style={{ padding: "12px 20px", color: "#6b7280", fontSize: "12px" }}>{student.className}</td>
+                    <td style={{ padding: "12px 20px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <div style={{ width: "48px", height: "3px", backgroundColor: "#f3f4f6", borderRadius: "4px", overflow: "hidden" }}>
+                          <div style={{ height: "100%", width: `${score}%`, backgroundColor: tm.dot, borderRadius: "4px", transition: "width 0.5s" }} />
                         </div>
-                        <span className="text-xs font-mono text-gray-600">{score}</span>
+                        <span style={{ fontSize: "12px", fontFamily: "monospace", fontWeight: 700, color: tm.dot }}>{score}</span>
                       </div>
                     </td>
-                    <td className="px-5 py-3.5">
-                      <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${ts.bg} ${ts.text}`}>
-                        {ts.label}
+                    <td style={{ padding: "12px 20px" }}>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "11px", fontWeight: 700, color: tm.dot }}>
+                        <span style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: tm.dot, display: "inline-block", flexShrink: 0 }} />
+                        {tm.label.toUpperCase()}
                       </span>
                     </td>
-                    <td className="px-5 py-3.5 text-gray-400 text-xs max-w-xs truncate">{student.topExplanation}</td>
+                    <td style={{ padding: "12px 20px", color: "#9ca3af", fontSize: "11px", maxWidth: "280px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {student.topExplanation}
+                    </td>
                   </tr>
                 );
               })}
               {topAtRisk?.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-5 py-10 text-center text-gray-400">
+                  <td colSpan={6} style={{ padding: "48px 20px", textAlign: "center", color: "#d1d5db", fontSize: "13px" }}>
                     No students currently at risk.
                   </td>
                 </tr>
@@ -311,7 +350,25 @@ export default function AdminDashboard() {
             </tbody>
           </table>
         </div>
-      </Card>
+
+        {/* Table footer */}
+        <div style={{ padding: "14px 24px", borderTop: "1px solid #f9fafb", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <p style={{ fontSize: "11px", color: "#d1d5db" }}>
+            Showing top {topAtRisk?.length ?? 0} students · Updated in real-time
+          </p>
+          <Link href="/admin/users">
+            <button
+              style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "11px", fontWeight: 600, color: "#9ca3af", background: "none", border: "none", cursor: "pointer", transition: "color 0.12s" }}
+              onMouseEnter={e => (e.currentTarget.style.color = DARK)}
+              onMouseLeave={e => (e.currentTarget.style.color = "#9ca3af")}
+            >
+              <Users style={{ width: "11px", height: "11px" }} />
+              Manage user accounts
+            </button>
+          </Link>
+        </div>
+      </motion.div>
+
     </div>
   );
 }
