@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import { LogOut, LayoutDashboard, Users, GraduationCap, Menu, X } from "lucide-react";
+import { LogOut, LayoutDashboard, Users, GraduationCap, BarChart2, Bell, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -11,8 +11,10 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
 
   const navigation = [
     { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
+    { name: "Analytics", href: "/admin/analytics", icon: BarChart2 },
     { name: "Users", href: "/admin/users", icon: Users },
     { name: "Classes", href: "/admin/classes", icon: GraduationCap },
+    { name: "Notifications", href: "/admin/notifications", icon: Bell },
   ];
 
   return (

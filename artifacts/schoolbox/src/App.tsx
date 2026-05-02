@@ -8,8 +8,10 @@ import Login from "@/pages/login";
 import NotFound from "@/pages/not-found";
 
 import AdminDashboard from "@/pages/admin/dashboard";
+import AdminAnalytics from "@/pages/admin/analytics";
 import AdminUsers from "@/pages/admin/users";
 import AdminClasses from "@/pages/admin/classes";
+import AdminNotifications from "@/pages/admin/notifications";
 import { AdminLayout } from "@/components/layout/admin-layout";
 
 import TeacherDashboard from "@/pages/teacher/index";
@@ -89,11 +91,17 @@ function Router() {
       <Route path="/admin">
         <ProtectedRoute component={AdminDashboard} layout={AdminLayout} allowedRoles={["admin"]} />
       </Route>
+      <Route path="/admin/analytics">
+        <ProtectedRoute component={AdminAnalytics} layout={AdminLayout} allowedRoles={["admin"]} />
+      </Route>
       <Route path="/admin/users">
         <ProtectedRoute component={AdminUsers} layout={AdminLayout} allowedRoles={["admin"]} />
       </Route>
       <Route path="/admin/classes">
         <ProtectedRoute component={AdminClasses} layout={AdminLayout} allowedRoles={["admin"]} />
+      </Route>
+      <Route path="/admin/notifications">
+        <ProtectedRoute component={AdminNotifications} layout={AdminLayout} allowedRoles={["admin"]} />
       </Route>
 
       <Route path="/teacher">
