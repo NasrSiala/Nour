@@ -8,6 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { OfflineBanner } from "@/components/offline-banner";
 import { SidebarLogo, MobileLogoMark } from "@/components/logo";
+import { NetworkStatusPill } from "@/components/network-status-pill";
 
 const navGroups = [
   {
@@ -159,6 +160,9 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             </div>
           ))}
         </nav>
+
+        {/* Network status */}
+        <NetworkStatusPill />
 
         {/* User section */}
         <div style={{ padding: "12px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>

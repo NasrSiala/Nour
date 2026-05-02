@@ -8,6 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { OfflineBanner } from "@/components/offline-banner";
 import { SidebarLogo, MobileLogoMark } from "@/components/logo";
+import { NetworkStatusPill } from "@/components/network-status-pill";
 
 const navGroups = [
   {
@@ -100,6 +101,9 @@ export function TeacherLayout({ children }: { children: React.ReactNode }) {
             </div>
           ))}
         </nav>
+
+        {/* Network status */}
+        <NetworkStatusPill />
 
         <div style={{ padding: "12px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "8px 10px", borderRadius: "8px", marginBottom: "2px" }}>
