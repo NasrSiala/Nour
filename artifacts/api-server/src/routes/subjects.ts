@@ -132,6 +132,40 @@ router.get("/lessons/:id", requireAuth, async (req, res): Promise<void> => {
   });
 });
 
+router.patch("/subjects/:id", requireAuth, async (req, res): Promise<void> => {
+  const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const id = parseInt(raw, 10);
+
+  const { name, code, gradeLevel, description, isActive } = req.body ?? {};
+  const updates: Record<string, unknown> = {};
+  if (typeof name === "string" && name.trim()) updates.name = name.trim();
+  if (typeof code === "string" && code.trim()) updates.code = code.trim().toUpperCase();
+  if (typeof gradeLevel === "number") updates.gradeLevel = gradeLevel;
+  if ("description" in (req.body ?? {})) updates.description = description ?? null;
+  if (typeof isActive === "boolean") updates.isActive = isActive;
+
+  if (Object.keys(updates).length === 0) {
+    res.status(400).json({ error: "No fields to update" });
+    return;
+  }
+
+  const [updated] = await db.update(subjectsTable).set(updates).where(eq(subjectsTable.id, id)).returning();
+  if (!updated) { res.status(404).json({ error: "Subject not found" }); return; }
+
+  const [lc] = await db.select({ count: count() }).from(lessonsTable).where(eq(lessonsTable.subjectId, id));
+  res.json({ ...updated, lessonCount: lc?.count ?? 0, createdAt: updated.createdAt.toISOString() });
+});
+
+router.delete("/subjects/:id", requireAuth, async (req, res): Promise<void> => {
+  const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const id = parseInt(raw, 10);
+
+  const [deleted] = await db.delete(subjectsTable).where(eq(subjectsTable.id, id)).returning();
+  if (!deleted) { res.status(404).json({ error: "Subject not found" }); return; }
+
+  res.status(204).send();
+});
+
 router.patch("/lessons/:id/file", requireAuth, async (req, res): Promise<void> => {
   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(raw, 10);

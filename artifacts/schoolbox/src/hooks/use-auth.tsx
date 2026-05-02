@@ -1,7 +1,16 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { useGetMe, getGetMeQueryKey, User, useLogin, useLogout } from "@workspace/api-client-react";
+import { useGetMe, getGetMeQueryKey, useLogin, useLogout } from "@workspace/api-client-react";
 import { setAuthTokenGetter } from "@workspace/api-client-react/src/custom-fetch";
 import { useQueryClient } from "@tanstack/react-query";
+
+export type User = {
+  id: number;
+  username: string;
+  fullName: string;
+  role: string;
+  classId?: number | null;
+  isActive?: boolean;
+};
 
 interface LoginCredentials {
   username: string;

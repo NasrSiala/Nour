@@ -16,7 +16,7 @@ export function StudentLayout({ children }: { children: React.ReactNode }) {
     { name: "Attendance", href: "/student/attendance", icon: Clock },
   ];
 
-  const initials = user?.fullName?.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase() ?? "S";
+  const initials = user?.fullName?.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase() ?? "S";
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-gray-100">

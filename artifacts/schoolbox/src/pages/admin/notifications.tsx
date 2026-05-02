@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { useListNotifications, useSendNotification, useListStudents, getListNotificationsQueryKey, getListStudentsQueryKey, type SendNotificationBody } from "@workspace/api-client-react";
+import { useListNotifications, useSendNotification, useListStudents, getListNotificationsQueryKey, getListStudentsQueryKey } from "@workspace/api-client-react";
+
+type SendNotificationBody = {
+  templateKey: "absence_alert" | "risk_alert" | "quiz_failure";
+  lang: "fr" | "ar";
+  customMessage?: string | null;
+};
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

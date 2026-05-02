@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   useListSubjects,
   useCreateSubject,
@@ -16,8 +16,24 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
@@ -34,8 +50,17 @@ import {
   Hash,
   FileText,
   CheckCircle2,
+  MoreVertical,
+  Pencil,
+  Trash2,
+  ToggleLeft,
+  ToggleRight,
+  ArrowUpDown,
+  Keyboard,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 const subjectGradients = [
   "from-emerald-500 to-teal-600",
@@ -48,16 +73,109 @@ const subjectGradients = [
 
 const GRADE_LEVELS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
+type Subject = {
+  id: number;
+  code: string;
+  name: string;
+  gradeLevel: number;
+  description?: string | null;
+  isActive: boolean;
+  lessonCount: number;
+  createdAt: string;
+};
+
+type SortKey = "name" | "grade" | "lessons" | "created";
+
+const emptyForm = { code: "", name: "", gradeLevel: "", description: "" };
+
+function SubjectFormFields({
+  form,
+  setForm,
+}: {
+  form: typeof emptyForm;
+  setForm: React.Dispatch<React.SetStateAction<typeof emptyForm>>;
+}) {
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="code" className="flex items-center gap-1.5 text-xs font-semibold">
+            <Hash className="h-3.5 w-3.5 text-muted-foreground" />
+            Code *
+          </Label>
+          <Input
+            id="code"
+            placeholder="ex: MATH-G5"
+            value={form.code}
+            onChange={e => setForm(f => ({ ...f, code: e.target.value }))}
+            className="uppercase font-mono"
+            maxLength={12}
+            required
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="grade" className="flex items-center gap-1.5 text-xs font-semibold">
+            <GraduationCap className="h-3.5 w-3.5 text-muted-foreground" />
+            Niveau *
+          </Label>
+          <Select
+            value={form.gradeLevel}
+            onValueChange={v => setForm(f => ({ ...f, gradeLevel: v }))}
+          >
+            <SelectTrigger id="grade">
+              <SelectValue placeholder="Choisir" />
+            </SelectTrigger>
+            <SelectContent>
+              {GRADE_LEVELS.map(g => (
+                <SelectItem key={g} value={String(g)}>Grade {g}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="name" className="flex items-center gap-1.5 text-xs font-semibold">
+          <BookOpen className="h-3.5 w-3.5 text-muted-foreground" />
+          Nom de la matière *
+        </Label>
+        <Input
+          id="name"
+          placeholder="ex: Mathématiques"
+          value={form.name}
+          onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+          required
+        />
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="description" className="flex items-center gap-1.5 text-xs font-semibold">
+          <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+          Description
+          <span className="text-muted-foreground font-normal">(optionnel)</span>
+        </Label>
+        <Textarea
+          id="description"
+          placeholder="Décrivez brièvement le contenu de la matière..."
+          value={form.description}
+          onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+          rows={3}
+          className="resize-none"
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function AdminSubjects() {
   const [search, setSearch] = useState("");
   const [gradeFilter, setGradeFilter] = useState("all");
-  const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({
-    code: "",
-    name: "",
-    gradeLevel: "",
-    description: "",
-  });
+  const [sortKey, setSortKey] = useState<SortKey>("grade");
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editSubject, setEditSubject] = useState<Subject | null>(null);
+  const [deleteSubject, setDeleteSubject] = useState<Subject | null>(null);
+  const [createForm, setCreateForm] = useState(emptyForm);
+  const [editForm, setEditForm] = useState(emptyForm);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -67,45 +185,135 @@ export default function AdminSubjects() {
     { query: { queryKey: getListSubjectsQueryKey({}) } }
   );
 
-  const { mutate: createSubject, isPending } = useCreateSubject({
+  const { mutate: createSubject, isPending: creating } = useCreateSubject({
     mutation: {
-      onSuccess: () => {
+      onSuccess: (s) => {
         queryClient.invalidateQueries({ queryKey: getListSubjectsQueryKey({}) });
-        setOpen(false);
-        setForm({ code: "", name: "", gradeLevel: "", description: "" });
-        toast({ title: "Matière créée", description: `"${form.name}" a été ajoutée avec succès.` });
+        setCreateOpen(false);
+        setCreateForm(emptyForm);
+        toast({ title: "Matière créée", description: `"${s.name}" ajoutée avec succès.` });
       },
-      onError: () => {
-        toast({ title: "Erreur", description: "Impossible de créer la matière.", variant: "destructive" });
-      },
+      onError: () => toast({ title: "Erreur", description: "Impossible de créer la matière.", variant: "destructive" }),
     },
   });
 
-  const filtered = subjects?.filter(s => {
-    const matchSearch =
-      s.name.toLowerCase().includes(search.toLowerCase()) ||
-      s.code.toLowerCase().includes(search.toLowerCase());
-    const matchGrade = gradeFilter === "all" || s.gradeLevel === Number(gradeFilter);
-    return matchSearch && matchGrade;
-  }) ?? [];
+  // Keyboard shortcut: N = new subject
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.key === "n" || e.key === "N") && !e.ctrlKey && !e.metaKey &&
+        !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement)) {
+        setCreateOpen(true);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
-  const grades = [...new Set(subjects?.map(s => s.gradeLevel) ?? [])].sort();
-  const totalLessons = subjects?.reduce((a, s) => a + (s.lessonCount ?? 0), 0) ?? 0;
+  const openEdit = useCallback((s: Subject) => {
+    setEditSubject(s);
+    setEditForm({
+      code: s.code,
+      name: s.name,
+      gradeLevel: String(s.gradeLevel),
+      description: s.description ?? "",
+    });
+  }, []);
 
-  function handleSubmit(e: React.FormEvent) {
+  const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.code || !form.name || !form.gradeLevel) return;
+    if (!createForm.code || !createForm.name || !createForm.gradeLevel) return;
     createSubject({
       data: {
-        code: form.code.toUpperCase().trim(),
-        name: form.name.trim(),
-        gradeLevel: Number(form.gradeLevel),
-        description: form.description.trim() || null,
+        code: createForm.code.toUpperCase().trim(),
+        name: createForm.name.trim(),
+        gradeLevel: Number(createForm.gradeLevel),
+        description: createForm.description.trim() || null,
       },
     });
-  }
+  };
 
-  const canSubmit = form.code && form.name && form.gradeLevel;
+  const handleEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editSubject || !editForm.code || !editForm.name || !editForm.gradeLevel) return;
+    setSaving(true);
+    try {
+      const token = localStorage.getItem("schoolbox_token");
+      const res = await fetch(`${BASE}/api/subjects/${editSubject.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          code: editForm.code.toUpperCase().trim(),
+          name: editForm.name.trim(),
+          gradeLevel: Number(editForm.gradeLevel),
+          description: editForm.description.trim() || null,
+        }),
+      });
+      if (!res.ok) throw new Error();
+      queryClient.invalidateQueries({ queryKey: getListSubjectsQueryKey({}) });
+      setEditSubject(null);
+      toast({ title: "Matière mise à jour", description: `"${editForm.name}" modifiée avec succès.` });
+    } catch {
+      toast({ title: "Erreur", description: "Impossible de modifier la matière.", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleToggleActive = async (s: Subject) => {
+    try {
+      const token = localStorage.getItem("schoolbox_token");
+      await fetch(`${BASE}/api/subjects/${s.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ isActive: !s.isActive }),
+      });
+      queryClient.invalidateQueries({ queryKey: getListSubjectsQueryKey({}) });
+      toast({
+        title: s.isActive ? "Matière désactivée" : "Matière activée",
+        description: `"${s.name}" ${s.isActive ? "désactivée" : "activée"}.`,
+      });
+    } catch {
+      toast({ title: "Erreur", variant: "destructive" });
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteSubject) return;
+    setDeleting(true);
+    try {
+      const token = localStorage.getItem("schoolbox_token");
+      const res = await fetch(`${BASE}/api/subjects/${deleteSubject.id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error();
+      queryClient.invalidateQueries({ queryKey: getListSubjectsQueryKey({}) });
+      setDeleteSubject(null);
+      toast({ title: "Matière supprimée", description: `"${deleteSubject.name}" supprimée.` });
+    } catch {
+      toast({ title: "Erreur", description: "Impossible de supprimer la matière.", variant: "destructive" });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const filtered = (subjects ?? [])
+    .filter(s => {
+      const matchSearch = s.name.toLowerCase().includes(search.toLowerCase()) ||
+        s.code.toLowerCase().includes(search.toLowerCase());
+      const matchGrade = gradeFilter === "all" || s.gradeLevel === Number(gradeFilter);
+      return matchSearch && matchGrade;
+    })
+    .sort((a, b) => {
+      if (sortKey === "name") return a.name.localeCompare(b.name);
+      if (sortKey === "grade") return a.gradeLevel - b.gradeLevel || a.name.localeCompare(b.name);
+      if (sortKey === "lessons") return b.lessonCount - a.lessonCount;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+
+  const grades = [...new Set((subjects ?? []).map(s => s.gradeLevel))].sort();
+  const totalLessons = (subjects ?? []).reduce((a, s) => a + (s.lessonCount ?? 0), 0);
+  const activeCount = (subjects ?? []).filter(s => s.isActive).length;
 
   return (
     <div className="space-y-6 pb-8">
@@ -113,130 +321,27 @@ export default function AdminSubjects() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Matières</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">
-            Gérez le programme pédagogique et les matières
-          </p>
+          <p className="text-muted-foreground text-sm mt-0.5">Gérez le programme pédagogique</p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2 shrink-0">
-              <Plus className="h-4 w-4" />
-              Nouvelle matière
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-primary/10">
-                  <BookOpen className="h-4 w-4 text-primary" />
-                </div>
-                Ajouter une matière
-              </DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="code" className="flex items-center gap-1.5 text-xs font-semibold">
-                    <Hash className="h-3.5 w-3.5 text-muted-foreground" />
-                    Code *
-                  </Label>
-                  <Input
-                    id="code"
-                    placeholder="ex: MATH-G5"
-                    value={form.code}
-                    onChange={e => setForm(f => ({ ...f, code: e.target.value }))}
-                    className="uppercase"
-                    maxLength={12}
-                    required
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="grade" className="flex items-center gap-1.5 text-xs font-semibold">
-                    <GraduationCap className="h-3.5 w-3.5 text-muted-foreground" />
-                    Niveau *
-                  </Label>
-                  <Select
-                    value={form.gradeLevel}
-                    onValueChange={v => setForm(f => ({ ...f, gradeLevel: v }))}
-                    required
-                  >
-                    <SelectTrigger id="grade">
-                      <SelectValue placeholder="Choisir" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {GRADE_LEVELS.map(g => (
-                        <SelectItem key={g} value={String(g)}>
-                          Grade {g}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="name" className="flex items-center gap-1.5 text-xs font-semibold">
-                  <BookOpen className="h-3.5 w-3.5 text-muted-foreground" />
-                  Nom de la matière *
-                </Label>
-                <Input
-                  id="name"
-                  placeholder="ex: Mathématiques"
-                  value={form.name}
-                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                  required
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="description" className="flex items-center gap-1.5 text-xs font-semibold">
-                  <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-                  Description
-                  <span className="text-muted-foreground font-normal">(optionnel)</span>
-                </Label>
-                <Textarea
-                  id="description"
-                  placeholder="Décrivez brièvement le contenu de la matière..."
-                  value={form.description}
-                  onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                  rows={3}
-                  className="resize-none"
-                />
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => setOpen(false)}
-                >
-                  Annuler
-                </Button>
-                <Button
-                  type="submit"
-                  className="flex-1 gap-2"
-                  disabled={!canSubmit || isPending}
-                >
-                  {isPending ? (
-                    <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                  ) : (
-                    <CheckCircle2 className="h-4 w-4" />
-                  )}
-                  {isPending ? "Création..." : "Créer la matière"}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <div className="flex items-center gap-2">
+          <span className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground border border-border rounded-lg px-2.5 py-1.5">
+            <Keyboard className="h-3.5 w-3.5" />
+            Appuyez sur <kbd className="font-mono font-bold">N</kbd> pour créer
+          </span>
+          <Button className="gap-2" onClick={() => setCreateOpen(true)}>
+            <Plus className="h-4 w-4" />
+            Nouvelle matière
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: "Matières", value: subjects?.length ?? 0, icon: BookOpen, color: "text-primary bg-primary/10" },
-          { label: "Leçons au total", value: totalLessons, icon: FileText, color: "text-blue-600 bg-blue-50" },
-          { label: "Niveaux couverts", value: grades.length, icon: GraduationCap, color: "text-violet-600 bg-violet-50" },
+          { label: "Total matières", value: subjects?.length ?? 0, icon: BookOpen, color: "text-primary bg-primary/10" },
+          { label: "Actives", value: activeCount, icon: CheckCircle2, color: "text-emerald-600 bg-emerald-50" },
+          { label: "Leçons", value: totalLessons, icon: FileText, color: "text-blue-600 bg-blue-50" },
+          { label: "Niveaux", value: grades.length, icon: GraduationCap, color: "text-violet-600 bg-violet-50" },
         ].map((stat, i) => (
           <motion.div
             key={stat.label}
@@ -245,18 +350,18 @@ export default function AdminSubjects() {
             transition={{ delay: i * 0.05 }}
             className="rounded-2xl border border-border bg-white p-4 flex items-center gap-3"
           >
-            <div className={`p-2.5 rounded-xl ${stat.color}`}>
-              <stat.icon className="h-5 w-5" />
+            <div className={`p-2.5 rounded-xl ${stat.color} shrink-0`}>
+              <stat.icon className="h-4 w-4" />
             </div>
             <div>
-              <p className="text-2xl font-black">{stat.value}</p>
-              <p className="text-xs text-muted-foreground">{stat.label}</p>
+              <p className="text-xl font-black leading-none">{stat.value}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{stat.label}</p>
             </div>
           </motion.div>
         ))}
       </div>
 
-      {/* Filters */}
+      {/* Filters + Sort */}
       <div className="flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-48">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -268,17 +373,25 @@ export default function AdminSubjects() {
           />
         </div>
         <Select value={gradeFilter} onValueChange={setGradeFilter}>
-          <SelectTrigger className="w-44 rounded-xl">
-            <GraduationCap className="h-4 w-4 mr-2 text-muted-foreground" />
+          <SelectTrigger className="w-40 rounded-xl">
+            <GraduationCap className="h-4 w-4 mr-1.5 text-muted-foreground" />
             <SelectValue placeholder="Tous les niveaux" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tous les niveaux</SelectItem>
-            {grades.map(g => (
-              <SelectItem key={g} value={String(g)}>
-                Grade {g}
-              </SelectItem>
-            ))}
+            {grades.map(g => <SelectItem key={g} value={String(g)}>Grade {g}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={sortKey} onValueChange={v => setSortKey(v as SortKey)}>
+          <SelectTrigger className="w-40 rounded-xl">
+            <ArrowUpDown className="h-4 w-4 mr-1.5 text-muted-foreground" />
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="grade">Par niveau</SelectItem>
+            <SelectItem value="name">Par nom</SelectItem>
+            <SelectItem value="lessons">Par leçons</SelectItem>
+            <SelectItem value="created">Plus récents</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -286,21 +399,18 @@ export default function AdminSubjects() {
       {/* Grid */}
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1, 2, 3, 4, 5, 6].map(i => <Skeleton key={i} className="h-44 rounded-2xl" />)}
+          {[1, 2, 3, 4, 5, 6].map(i => <Skeleton key={i} className="h-48 rounded-2xl" />)}
         </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-20 rounded-2xl border border-dashed border-border bg-muted/30">
           <BookOpen className="h-12 w-12 mx-auto mb-3 text-muted-foreground/30" />
           <p className="font-medium text-muted-foreground">Aucune matière trouvée</p>
           <p className="text-sm text-muted-foreground mt-1">
-            {search || gradeFilter !== "all"
-              ? "Modifiez vos filtres"
-              : "Commencez par créer une matière"}
+            {search || gradeFilter !== "all" ? "Modifiez vos filtres" : "Commencez par créer une matière"}
           </p>
           {!search && gradeFilter === "all" && (
-            <Button className="mt-4 gap-2" onClick={() => setOpen(true)}>
-              <Plus className="h-4 w-4" />
-              Créer la première matière
+            <Button className="mt-4 gap-2" onClick={() => setCreateOpen(true)}>
+              <Plus className="h-4 w-4" />Créer la première matière
             </Button>
           )}
         </div>
@@ -314,47 +424,75 @@ export default function AdminSubjects() {
                   key={subject.id}
                   initial={{ opacity: 0, scale: 0.95, y: 10 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ delay: i * 0.04, duration: 0.25 }}
+                  exit={{ opacity: 0, scale: 0.92 }}
+                  transition={{ delay: i * 0.035, duration: 0.25 }}
                   layout
                 >
-                  <div className="relative overflow-hidden rounded-2xl border border-border bg-white hover:shadow-md transition-all duration-200 h-full">
-                    {/* Gradient top bar */}
-                    <div className={`h-1.5 w-full bg-gradient-to-r ${grad}`} />
+                  <div className={`relative overflow-hidden rounded-2xl border bg-white transition-all duration-200 h-full ${
+                    subject.isActive ? "border-border hover:shadow-md" : "border-border/50 opacity-60"
+                  }`}>
+                    <div className={`h-1.5 w-full bg-gradient-to-r ${grad} ${!subject.isActive ? "opacity-40" : ""}`} />
                     <div className="p-5">
-                      {/* Header */}
-                      <div className="flex items-start justify-between gap-3 mb-4">
-                        <div className={`p-2.5 rounded-xl bg-gradient-to-br ${grad} shadow-sm shrink-0`}>
+                      {/* Header row */}
+                      <div className="flex items-start justify-between gap-2 mb-4">
+                        <div className={`p-2.5 rounded-xl bg-gradient-to-br ${grad} shadow-sm shrink-0 ${!subject.isActive ? "opacity-50" : ""}`}>
                           <BookOpen className="h-5 w-5 text-white" />
                         </div>
-                        <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex items-center gap-1.5 shrink-0">
                           {subject.isActive ? (
-                            <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs">
-                              Actif
-                            </Badge>
+                            <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs">Actif</Badge>
                           ) : (
-                            <Badge variant="secondary" className="text-xs">Inactif</Badge>
+                            <Badge variant="secondary" className="text-xs text-muted-foreground">Inactif</Badge>
                           )}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-44">
+                              <DropdownMenuItem onClick={() => openEdit(subject)} className="gap-2">
+                                <Pencil className="h-3.5 w-3.5" />Modifier
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleToggleActive(subject)} className="gap-2">
+                                {subject.isActive
+                                  ? <><ToggleLeft className="h-3.5 w-3.5" />Désactiver</>
+                                  : <><ToggleRight className="h-3.5 w-3.5" />Activer</>
+                                }
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => setDeleteSubject(subject)}
+                                className="gap-2 text-red-600 focus:text-red-600 focus:bg-red-50"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />Supprimer
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
 
                       <h3 className="font-bold text-base leading-tight">{subject.name}</h3>
                       <p className="text-xs text-muted-foreground mt-0.5 font-mono">{subject.code}</p>
-
                       {subject.description && (
-                        <p className="text-xs text-muted-foreground mt-2 line-clamp-2 leading-relaxed">
-                          {subject.description}
-                        </p>
+                        <p className="text-xs text-muted-foreground mt-2 line-clamp-2 leading-relaxed">{subject.description}</p>
                       )}
 
-                      {/* Footer */}
-                      <div className="flex items-center gap-2 mt-4 pt-3 border-t border-border flex-wrap">
-                        <Badge variant="outline" className="text-xs">
-                          Grade {subject.gradeLevel}
-                        </Badge>
-                        <Badge variant="secondary" className="text-xs">
-                          {subject.lessonCount} leçon{subject.lessonCount !== 1 ? "s" : ""}
-                        </Badge>
+                      {/* Lesson count bar */}
+                      <div className="mt-4 pt-3 border-t border-border">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-xs text-muted-foreground">Leçons</span>
+                          <span className="text-xs font-bold">{subject.lessonCount}</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full bg-gradient-to-r ${grad} transition-all duration-500`}
+                            style={{ width: `${Math.min(100, (subject.lessonCount / 20) * 100)}%` }}
+                          />
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-2">
+                          <Badge variant="outline" className="text-xs">Grade {subject.gradeLevel}</Badge>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -364,6 +502,91 @@ export default function AdminSubjects() {
           </div>
         </AnimatePresence>
       )}
+
+      {/* CREATE dialog */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-primary/10">
+                <BookOpen className="h-4 w-4 text-primary" />
+              </div>
+              Ajouter une matière
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCreate} className="space-y-4 pt-2">
+            <SubjectFormFields form={createForm} setForm={setCreateForm} />
+            <div className="flex gap-3 pt-1">
+              <Button type="button" variant="outline" className="flex-1" onClick={() => setCreateOpen(false)}>
+                Annuler
+              </Button>
+              <Button type="submit" className="flex-1 gap-2" disabled={!createForm.code || !createForm.name || !createForm.gradeLevel || creating}>
+                {creating ? <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                {creating ? "Création..." : "Créer"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* EDIT dialog */}
+      <Dialog open={!!editSubject} onOpenChange={v => { if (!v) setEditSubject(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-blue-50">
+                <Pencil className="h-4 w-4 text-blue-600" />
+              </div>
+              Modifier la matière
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEdit} className="space-y-4 pt-2">
+            <SubjectFormFields form={editForm} setForm={setEditForm} />
+            <div className="flex gap-3 pt-1">
+              <Button type="button" variant="outline" className="flex-1" onClick={() => setEditSubject(null)}>
+                Annuler
+              </Button>
+              <Button type="submit" className="flex-1 gap-2" disabled={!editForm.code || !editForm.name || !editForm.gradeLevel || saving}>
+                {saving ? <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                {saving ? "Enregistrement..." : "Enregistrer"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* DELETE confirmation */}
+      <AlertDialog open={!!deleteSubject} onOpenChange={v => { if (!v) setDeleteSubject(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Trash2 className="h-5 w-5 text-red-500" />
+              Supprimer « {deleteSubject?.name} » ?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {(deleteSubject?.lessonCount ?? 0) > 0 ? (
+                <span className="text-amber-700 font-medium">
+                  ⚠️ Cette matière contient {deleteSubject?.lessonCount} leçon{deleteSubject!.lessonCount > 1 ? "s" : ""}. 
+                  Toutes seront supprimées définitivement.
+                </span>
+              ) : (
+                "Cette action est irréversible. La matière sera définitivement supprimée."
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-red-600 hover:bg-red-700 text-white gap-2"
+            >
+              {deleting ? <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <Trash2 className="h-4 w-4" />}
+              {deleting ? "Suppression..." : "Supprimer définitivement"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

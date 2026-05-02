@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useListUsers, useDeactivateUser, useCreateUser, CreateUserBodyRole } from "@workspace/api-client-react";
+import { useListUsers, useDeactivateUser } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Plus, MoreHorizontal, UserX, CheckCircle2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
-import { QueryClient, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function UserManagement() {
   const { data: users, isLoading } = useListUsers();
