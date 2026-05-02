@@ -16,7 +16,7 @@ export function SidebarLogo({ portalLabel }: { portalLabel: string }) {
       <LogoMark size={32} />
       <div>
         <p style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700, fontSize: "14px", color: "white", lineHeight: 1, letterSpacing: "-0.01em" }}>
-          SchoolBox
+          Noor
         </p>
         <p style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.1em", color: "#4d7a62", textTransform: "uppercase", marginTop: "3px" }}>
           {portalLabel}
@@ -31,7 +31,7 @@ export function MobileLogoMark() {
     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
       <LogoMark size={26} />
       <span style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700, fontSize: "14px", color: "white", letterSpacing: "-0.01em" }}>
-        SchoolBox
+        Noor
       </span>
     </div>
   );
@@ -43,7 +43,7 @@ export function LoginLogo() {
       <LogoMark size={36} />
       <div>
         <p style={{ fontFamily: "'Sora', sans-serif", fontWeight: 800, fontSize: "16px", color: "white", lineHeight: 1, letterSpacing: "-0.02em" }}>
-          SchoolBox
+          Noor
         </p>
         <p style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.12em", color: "#4d7a62", textTransform: "uppercase", marginTop: "4px" }}>
           Offline Platform

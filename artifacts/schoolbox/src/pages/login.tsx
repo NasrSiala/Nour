@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, WifiOff } from "lucide-react";
 import { motion } from "framer-motion";
-import { LoginLogo } from "@/components/logo";
+import { LoginLogo, LogoMark } from "@/components/logo";
 
 const DEMO = [
   { role: "Admin", user: "admin", pass: "admin123" },
@@ -152,13 +152,8 @@ export default function Login() {
         {/* Top bar */}
         <div className="flex items-center justify-between px-8 pt-7 pb-0">
           <div className="lg:hidden flex items-center gap-2.5">
-            <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold"
-              style={{ backgroundColor: "#0B2819", color: "#a7f3d0", fontFamily: "'Sora', sans-serif" }}
-            >
-              SB
-            </div>
-            <span className="font-semibold text-gray-900" style={{ fontFamily: "'Sora', sans-serif" }}>SchoolBox</span>
+            <LogoMark size={26} />
+            <span className="font-semibold text-gray-900" style={{ fontFamily: "'Sora', sans-serif" }}>Noor</span>
           </div>
           <div className="hidden lg:block" />
           <p className="text-xs text-gray-400 font-medium hidden sm:block">Tunisia Education Initiative</p>

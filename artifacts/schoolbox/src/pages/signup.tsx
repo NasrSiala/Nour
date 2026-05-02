@@ -5,13 +5,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { School, GraduationCap, BookOpen, Eye, EyeOff } from "lucide-react";
+import { GraduationCap, BookOpen, Eye, EyeOff } from "lucide-react";
 import { motion } from "framer-motion";
+import { LoginLogo, LogoMark } from "@/components/logo";
 
 const roles = [
   { value: "teacher" as const, label: "Teacher", icon: BookOpen, desc: "Manage classes & attendance" },
   { value: "student" as const, label: "Student", icon: GraduationCap, desc: "Access lessons & content" },
 ];
+
+const DARK = "#0B2819";
 
 export default function Signup() {
   const [fullName, setFullName] = useState("");
@@ -48,154 +51,183 @@ export default function Signup() {
   };
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left panel */}
-      <div className="hidden lg:flex lg:w-[45%] relative overflow-hidden flex-col justify-between p-12"
-        style={{ background: "linear-gradient(145deg, #0a3d25 0%, #0f5535 40%, #1a7a52 100%)" }}>
-        <div className="absolute inset-0 opacity-10"
-          style={{ backgroundImage: "radial-gradient(circle at 80% 20%, #ffffff 0%, transparent 50%), radial-gradient(circle at 20% 80%, #4ade80 0%, transparent 50%)" }} />
+    <div className="min-h-screen flex bg-white">
 
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
-          className="relative z-10 flex items-center gap-3">
-          <div className="bg-white/15 p-2.5 rounded-xl backdrop-blur">
-            <School className="h-7 w-7 text-white" />
-          </div>
-          <div>
-            <p className="text-white font-bold text-xl tracking-tight">SchoolBox</p>
-            <p className="text-green-300 text-xs font-medium">Offline Platform</p>
-          </div>
+      {/* ── Left editorial panel ── */}
+      <div
+        className="hidden lg:flex lg:w-[48%] flex-col justify-between p-14 relative overflow-hidden"
+        style={{ backgroundColor: DARK }}
+      >
+        {/* Dot grid */}
+        <div className="absolute inset-0 opacity-[0.07]"
+          style={{ backgroundImage: "radial-gradient(circle, #ffffff 1px, transparent 1px)", backgroundSize: "28px 28px" }} />
+        {/* Ambient glow */}
+        <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full opacity-20"
+          style={{ background: "radial-gradient(circle, #2d7a50 0%, transparent 70%)" }} />
+
+        {/* Wordmark */}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.7 }} className="relative z-10">
+          <LoginLogo />
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.7, delay: 0.2 }}
-          className="relative z-10 space-y-6">
-          <div>
-            <h2 className="text-white text-4xl font-bold leading-tight">
-              Join the<br />
-              <span className="text-green-300">SchoolBox community</span>
-            </h2>
-            <p className="text-green-100/80 mt-4 text-base leading-relaxed">
-              Create your account and get instant access to your school's digital platform — even without internet.
-            </p>
-          </div>
+        {/* Editorial text */}
+        <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.15 }} className="relative z-10">
+          <p style={{ color: "#6ee7a8", fontSize: "11px", letterSpacing: "0.12em", fontWeight: 600, marginBottom: "20px" }}>
+            JOIN THE COMMUNITY
+          </p>
+          <h2 className="text-white leading-[1.1]"
+            style={{ fontSize: "clamp(2rem, 3.2vw, 2.8rem)", fontFamily: "'Sora', sans-serif", fontWeight: 800, letterSpacing: "-0.02em" }}>
+            Your school.<br />
+            <span style={{ color: "#4ade80" }}>Always on.</span>
+          </h2>
+          <p style={{ color: "#a7c4b5", marginTop: "20px", fontSize: "15px", lineHeight: 1.65, maxWidth: "380px" }}>
+            Create your account and access your school's digital platform — lessons, attendance, and more — with or without internet.
+          </p>
 
-          <div className="space-y-4">
+          <div style={{ marginTop: "40px", borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: "32px", display: "flex", flexDirection: "column", gap: "16px" }}>
             {roles.map((r, i) => (
-              <motion.div key={r.value} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.4 + i * 0.15 }}
-                className="bg-white/10 backdrop-blur rounded-xl p-4 border border-white/10">
-                <div className="flex items-center gap-3 mb-1">
-                  <r.icon className="h-5 w-5 text-green-300" />
-                  <span className="text-white font-semibold">{r.label} account</span>
+              <motion.div key={r.value} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 + i * 0.1 }}
+                style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
+                <r.icon style={{ width: "14px", height: "14px", color: "#4ade80", marginTop: "3px", flexShrink: 0 }} />
+                <div>
+                  <p style={{ color: "white", fontSize: "13px", fontWeight: 600 }}>{r.label} account</p>
+                  <p style={{ color: "#7da890", fontSize: "12px", marginTop: "2px" }}>{r.desc}</p>
                 </div>
-                <p className="text-green-100/70 text-sm pl-8">{r.desc}</p>
               </motion.div>
             ))}
           </div>
         </motion.div>
 
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}
-          className="relative z-10 text-green-200/60 text-xs">
-          Admin accounts are created by your school administrator.
+        {/* Bottom note */}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.9 }}
+          className="relative z-10">
+          <p style={{ color: "#3d6650", fontSize: "11px" }}>
+            Admin accounts are created by your school administrator.
+          </p>
         </motion.div>
       </div>
 
-      {/* Right panel */}
-      <div className="flex-1 flex items-center justify-center p-6 bg-gray-50 overflow-y-auto">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
-          className="w-full max-w-md py-8">
-
-          <div className="lg:hidden flex items-center gap-2 mb-8">
-            <div className="bg-primary/10 p-2 rounded-lg">
-              <School className="h-5 w-5 text-primary" />
-            </div>
-            <span className="font-bold text-lg">SchoolBox Offline</span>
+      {/* ── Right: form ── */}
+      <div className="flex-1 flex flex-col">
+        {/* Top bar */}
+        <div className="flex items-center justify-between px-8 pt-7 pb-0">
+          <div className="lg:hidden flex items-center gap-2.5">
+            <LogoMark size={26} />
+            <span className="font-semibold text-gray-900" style={{ fontFamily: "'Sora', sans-serif" }}>Noor</span>
           </div>
+          <div className="hidden lg:block" />
+          <p className="text-xs text-gray-400 font-medium hidden sm:block">Tunisia Education Initiative</p>
+        </div>
 
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Create account</h1>
-            <p className="text-gray-500 mt-2">Fill in your details to get started</p>
-          </div>
+        <div className="flex-1 flex items-center justify-center px-6 py-10">
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}
+            className="w-full max-w-[400px]">
 
-          {/* Role picker */}
-          <div className="grid grid-cols-2 gap-3 mb-6">
-            {roles.map((r) => (
-              <button key={r.value} type="button" onClick={() => setRole(r.value)}
-                className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all text-sm font-medium ${
-                  role === r.value
-                    ? "border-primary bg-primary/5 text-primary"
-                    : "border-gray-200 bg-white text-gray-500 hover:border-gray-300"
-                }`}>
-                <r.icon className={`h-6 w-6 ${role === r.value ? "text-primary" : "text-gray-400"}`} />
-                {r.label}
-              </button>
-            ))}
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="fullName" className="text-sm font-medium text-gray-700">Full name</Label>
-              <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)}
-                required placeholder="e.g. Ahmed Ben Ali"
-                className="h-11 bg-white border-gray-200 focus:border-primary"
-                autoComplete="name" />
+            <div className="mb-8">
+              <h1 style={{ fontSize: "26px", fontWeight: 800, color: "#111827", letterSpacing: "-0.02em", fontFamily: "'Sora', sans-serif" }}>
+                Create account
+              </h1>
+              <p style={{ color: "#9ca3af", marginTop: "6px", fontSize: "14px" }}>Fill in your details to get started</p>
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="username" className="text-sm font-medium text-gray-700">Username</Label>
-              <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)}
-                required placeholder="Choose a unique username"
-                className="h-11 bg-white border-gray-200 focus:border-primary"
-                autoComplete="username" />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="password" className="text-sm font-medium text-gray-700">Password</Label>
-              <div className="relative">
-                <Input id="password" type={showPassword ? "text" : "password"}
-                  value={password} onChange={(e) => setPassword(e.target.value)}
-                  required placeholder="Min 6 characters"
-                  className="h-11 bg-white border-gray-200 focus:border-primary pr-10"
-                  autoComplete="new-password" />
-                <button type="button" tabIndex={-1}
-                  onClick={() => setShowPassword(v => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
+            {/* Role picker */}
+            <div style={{ marginBottom: "22px" }}>
+              <label style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", color: "#9ca3af", textTransform: "uppercase", display: "block", marginBottom: "8px" }}>
+                I am a
+              </label>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                {roles.map(r => {
+                  const active = role === r.value;
+                  return (
+                    <button
+                      key={r.value}
+                      type="button"
+                      onClick={() => setRole(r.value)}
+                      style={{
+                        padding: "14px 16px",
+                        borderRadius: "10px",
+                        border: active ? `2px solid ${DARK}` : "2px solid #f3f4f6",
+                        backgroundColor: active ? "#f0fdf4" : "white",
+                        cursor: "pointer",
+                        textAlign: "left",
+                        transition: "all 0.12s",
+                      }}
+                    >
+                      <r.icon style={{ width: "16px", height: "16px", color: active ? DARK : "#9ca3af", marginBottom: "6px" }} />
+                      <p style={{ fontSize: "13px", fontWeight: 700, color: active ? DARK : "#374151" }}>{r.label}</p>
+                      <p style={{ fontSize: "11px", color: "#9ca3af", marginTop: "2px" }}>{r.desc}</p>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">Confirm password</Label>
-              <Input id="confirmPassword" type={showPassword ? "text" : "password"}
-                value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
-                required placeholder="Repeat your password"
-                className={`h-11 bg-white border-gray-200 focus:border-primary ${confirmPassword && confirmPassword !== password ? "border-destructive" : ""}`}
-                autoComplete="new-password" />
-              {confirmPassword && confirmPassword !== password && (
-                <p className="text-xs text-destructive">Passwords don't match</p>
-              )}
-            </div>
+            <form onSubmit={handleSubmit}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginBottom: "24px" }}>
+                <div>
+                  <Label style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", color: "#9ca3af", textTransform: "uppercase" }}>
+                    Full name
+                  </Label>
+                  <Input
+                    value={fullName} onChange={e => setFullName(e.target.value)}
+                    placeholder="Your full name" required
+                    style={{ marginTop: "6px", height: "42px", fontSize: "14px" }}
+                  />
+                </div>
+                <div>
+                  <Label style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", color: "#9ca3af", textTransform: "uppercase" }}>
+                    Username
+                  </Label>
+                  <Input
+                    value={username} onChange={e => setUsername(e.target.value)}
+                    placeholder="e.g. ahmed.ben" required
+                    style={{ marginTop: "6px", height: "42px", fontSize: "14px" }}
+                  />
+                </div>
+                <div>
+                  <Label style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", color: "#9ca3af", textTransform: "uppercase" }}>
+                    Password
+                  </Label>
+                  <div style={{ position: "relative", marginTop: "6px" }}>
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      value={password} onChange={e => setPassword(e.target.value)}
+                      placeholder="Min. 6 characters" required
+                      style={{ height: "42px", fontSize: "14px", paddingRight: "44px" }}
+                    />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)}
+                      style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#9ca3af" }}>
+                      {showPassword ? <EyeOff style={{ width: "16px", height: "16px" }} /> : <Eye style={{ width: "16px", height: "16px" }} />}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <Label style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", color: "#9ca3af", textTransform: "uppercase" }}>
+                    Confirm password
+                  </Label>
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
+                    placeholder="Repeat password" required
+                    style={{ marginTop: "6px", height: "42px", fontSize: "14px" }}
+                  />
+                </div>
+              </div>
 
-            <Button type="submit" className="w-full h-11 text-sm font-semibold rounded-lg shadow-sm mt-2"
-              disabled={isSubmitting || (!!confirmPassword && password !== confirmPassword)}>
-              {isSubmitting ? (
-                <span className="flex items-center gap-2">
-                  <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                  Creating account…
-                </span>
-              ) : `Create ${role} account`}
-            </Button>
-          </form>
+              <Button type="submit" disabled={isSubmitting} className="w-full"
+                style={{ height: "46px", fontSize: "15px", fontWeight: 700, backgroundColor: DARK, fontFamily: "'Sora', sans-serif" }}>
+                {isSubmitting ? "Creating account…" : "Create account →"}
+              </Button>
+            </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-500">
+            <p style={{ textAlign: "center", marginTop: "24px", fontSize: "13px", color: "#9ca3af" }}>
               Already have an account?{" "}
               <Link href="/login">
-                <span className="text-primary font-semibold hover:underline cursor-pointer">Sign in</span>
+                <span style={{ color: DARK, fontWeight: 600, cursor: "pointer" }}>Sign in</span>
               </Link>
             </p>
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
       </div>
     </div>
   );
