@@ -39,7 +39,7 @@ router.get("/students", requireAuth, async (req, res): Promise<void> => {
   // Get class info for all students
   const classIds = [...new Set(students.filter(s => s.classId).map(s => s.classId!))];
   const classes = classIds.length > 0
-    ? await db.select().from(classesTable).where(sql`${classesTable.id} = ANY(ARRAY[${sql.join(classIds.map(id => sql`${id}`), sql`, `)}])`)
+    ? await db.select().from(classesTable).where(sql`${classesTable.id} = ANY(ARRAY[${sql.join(classIds, sql`, `)}]::int[])`)
     : [];
   const classMap = new Map(classes.map(c => [c.id, c]));
 

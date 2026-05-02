@@ -1,4 +1,4 @@
-import { db, usersTable, classesTable, studentsTable, subjectsTable, lessonsTable, attendanceSessionsTable, attendanceRecordsTable, riskScoresTable, riskAlertsTable, notificationsTable } from "@workspace/db";
+import { db, usersTable, classesTable, studentsTable, subjectsTable, lessonsTable, attendanceSessionsTable, attendanceRecordsTable, riskScoresTable, riskAlertsTable, notificationsTable, type Class } from "@workspace/db";
 import crypto from "crypto";
 
 function hashPassword(password: string): string {
@@ -67,7 +67,7 @@ async function seed() {
     { name: "6ème A", gradeLevel: 6, homeroomTeacherId: teachers[0].id, academicYear: "2025-2026" },
   ];
 
-  const classes = [];
+  const classes: Class[] = [];
   for (const c of classData) {
     const [cls] = await db.insert(classesTable).values(c).returning();
     classes.push(cls);
