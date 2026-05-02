@@ -13,6 +13,7 @@ import AdminAnalytics from "@/pages/admin/analytics";
 import AdminUsers from "@/pages/admin/users";
 import AdminClasses from "@/pages/admin/classes";
 import AdminNotifications from "@/pages/admin/notifications";
+import AdminSubjects from "@/pages/admin/subjects";
 import { AdminLayout } from "@/components/layout/admin-layout";
 
 import TeacherDashboard from "@/pages/teacher/index";
@@ -105,6 +106,9 @@ function Router() {
       </Route>
       <Route path="/admin/notifications">
         <ProtectedRoute component={AdminNotifications} layout={AdminLayout} allowedRoles={["admin"]} />
+      </Route>
+      <Route path="/admin/subjects">
+        <ProtectedRoute component={AdminSubjects} layout={AdminLayout} allowedRoles={["admin"]} />
       </Route>
 
       <Route path="/teacher">
