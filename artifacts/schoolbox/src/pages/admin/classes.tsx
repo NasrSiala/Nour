@@ -1,0 +1,129 @@
+import { useState } from "react";
+import { useListClasses, useCreateClass, getListClassesQueryKey } from "@workspace/api-client-react";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useForm } from "react-hook-form";
+import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
+import { Plus, Users, GraduationCap } from "lucide-react";
+import { motion } from "framer-motion";
+
+interface ClassFormData { name: string; gradeLevel: number; academicYear: string; }
+
+export default function AdminClasses() {
+  const [open, setOpen] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data: classes, isLoading } = useListClasses({ query: { queryKey: getListClassesQueryKey() } });
+  const createClass = useCreateClass();
+
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<ClassFormData>({
+    defaultValues: { name: "", gradeLevel: 3, academicYear: "2025-2026" }
+  });
+
+  const onSubmit = async (data: ClassFormData) => {
+    try {
+      await createClass.mutateAsync({ data: { ...data, gradeLevel: Number(data.gradeLevel) } });
+      queryClient.invalidateQueries({ queryKey: getListClassesQueryKey() });
+      toast({ title: "Classe créée avec succès" });
+      reset();
+      setOpen(false);
+    } catch {
+      toast({ title: "Erreur lors de la création", variant: "destructive" });
+    }
+  };
+
+  const byGrade = classes?.reduce((acc, cls) => {
+    const g = cls.gradeLevel;
+    if (!acc[g]) acc[g] = [];
+    acc[g].push(cls);
+    return acc;
+  }, {} as Record<number, typeof classes>) ?? {};
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Gestion des classes</h1>
+          <p className="text-muted-foreground">{classes?.length ?? 0} classes au total</p>
+        </div>
+        <Button onClick={() => setOpen(true)} className="gap-2" data-testid="button-create-class">
+          <Plus className="h-4 w-4" /> Nouvelle classe
+        </Button>
+      </div>
+
+      {isLoading ? (
+        <div className="space-y-4">{[1, 2].map(i => <Skeleton key={i} className="h-32 rounded-xl" />)}</div>
+      ) : (
+        Object.entries(byGrade).sort(([a], [b]) => Number(a) - Number(b)).map(([grade, gradeClasses]) => (
+          <div key={grade}>
+            <div className="flex items-center gap-2 mb-3">
+              <GraduationCap className="h-4 w-4 text-primary" />
+              <h2 className="font-semibold text-sm">Grade {grade}</h2>
+              <Badge variant="secondary" className="text-xs">{gradeClasses.length} classe{gradeClasses.length !== 1 ? "s" : ""}</Badge>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {gradeClasses.map((cls, i) => (
+                <motion.div key={cls.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
+                  <Card data-testid={`class-card-${cls.id}`}>
+                    <CardContent className="pt-5 pb-5">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="font-semibold">{cls.name}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{cls.academicYear}</p>
+                        </div>
+                        <div className="p-2 rounded-lg bg-primary/10">
+                          <Users className="h-4 w-4 text-primary" />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 mt-4 text-sm">
+                        <span className="font-bold text-lg">{cls.studentCount}</span>
+                        <span className="text-muted-foreground text-xs">élèves</span>
+                      </div>
+                      {cls.teacherName && (
+                        <p className="text-xs text-muted-foreground mt-2 truncate">Titulaire : {cls.teacherName}</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        ))
+      )}
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Créer une nouvelle classe</DialogTitle></DialogHeader>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Nom de la classe</Label>
+              <Input {...register("name", { required: true })} placeholder="Ex: 3ème A" data-testid="input-class-name" />
+              {errors.name && <p className="text-xs text-destructive">Requis</p>}
+            </div>
+            <div className="space-y-1.5">
+              <Label>Niveau (grade)</Label>
+              <Input type="number" {...register("gradeLevel", { required: true, min: 1, max: 12 })} placeholder="3" data-testid="input-grade-level" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Année scolaire</Label>
+              <Input {...register("academicYear", { required: true })} placeholder="2025-2026" data-testid="input-academic-year" />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>Annuler</Button>
+              <Button type="submit" disabled={createClass.isPending} data-testid="button-submit-class">
+                {createClass.isPending ? "Création..." : "Créer"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

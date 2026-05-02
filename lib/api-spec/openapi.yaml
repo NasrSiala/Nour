@@ -3,13 +3,32 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: SchoolBox Offline API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: users
+    description: User management
+  - name: students
+    description: Student management
+  - name: classes
+    description: Class management
+  - name: subjects
+    description: Subject and lesson content
+  - name: attendance
+    description: Attendance tracking
+  - name: risk
+    description: Dropout risk engine
+  - name: analytics
+    description: Admin analytics and KPIs
+  - name: notifications
+    description: Parent notifications
+
 paths:
   /healthz:
     get:
@@ -24,6 +43,824 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ── AUTH ──────────────────────────────────────────────────────────
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginBody"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  # ── USERS ──────────────────────────────────────────────────────────
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      summary: List all users
+      parameters:
+        - name: role
+          in: query
+          schema:
+            type: string
+            enum: [admin, teacher, student]
+        - name: classId
+          in: query
+          schema:
+            type: ["integer", "null"]
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+    post:
+      operationId: createUser
+      tags: [users]
+      summary: Create user (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserBody"
+      responses:
+        "201":
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /users/{id}:
+    get:
+      operationId: getUser
+      tags: [users]
+      summary: Get user by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+    patch:
+      operationId: updateUser
+      tags: [users]
+      summary: Update user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserBody"
+      responses:
+        "200":
+          description: User updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /users/{id}/deactivate:
+    patch:
+      operationId: deactivateUser
+      tags: [users]
+      summary: Deactivate user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User deactivated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  # ── STUDENTS ──────────────────────────────────────────────────────
+  /students:
+    get:
+      operationId: listStudents
+      tags: [students]
+      summary: List students
+      parameters:
+        - name: classId
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: isActive
+          in: query
+          schema:
+            type: ["boolean", "null"]
+      responses:
+        "200":
+          description: List of students
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Student"
+    post:
+      operationId: createStudent
+      tags: [students]
+      summary: Create student
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateStudentBody"
+      responses:
+        "201":
+          description: Student created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Student"
+
+  /students/{id}:
+    get:
+      operationId: getStudent
+      tags: [students]
+      summary: Get student by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Student found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Student"
+    patch:
+      operationId: updateStudent
+      tags: [students]
+      summary: Update student
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateStudentBody"
+      responses:
+        "200":
+          description: Student updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Student"
+
+  /students/{id}/attendance-summary:
+    get:
+      operationId: getStudentAttendanceSummary
+      tags: [students]
+      summary: Get student attendance summary
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: fromDate
+          in: query
+          schema:
+            type: ["string", "null"]
+        - name: toDate
+          in: query
+          schema:
+            type: ["string", "null"]
+      responses:
+        "200":
+          description: Student attendance summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentAttendanceSummary"
+
+  # ── CLASSES ──────────────────────────────────────────────────────
+  /classes:
+    get:
+      operationId: listClasses
+      tags: [classes]
+      summary: List classes
+      responses:
+        "200":
+          description: List of classes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Class"
+    post:
+      operationId: createClass
+      tags: [classes]
+      summary: Create class
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateClassBody"
+      responses:
+        "201":
+          description: Class created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Class"
+
+  /classes/{id}:
+    get:
+      operationId: getClass
+      tags: [classes]
+      summary: Get class by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Class found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Class"
+
+  /classes/{id}/students:
+    get:
+      operationId: getClassStudents
+      tags: [classes]
+      summary: Get students in class
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Students in class
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Student"
+
+  # ── SUBJECTS & LESSONS ────────────────────────────────────────────
+  /subjects:
+    get:
+      operationId: listSubjects
+      tags: [subjects]
+      summary: List subjects
+      parameters:
+        - name: gradeLevel
+          in: query
+          schema:
+            type: ["integer", "null"]
+      responses:
+        "200":
+          description: List of subjects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Subject"
+    post:
+      operationId: createSubject
+      tags: [subjects]
+      summary: Create subject
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSubjectBody"
+      responses:
+        "201":
+          description: Subject created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subject"
+
+  /subjects/{id}:
+    get:
+      operationId: getSubject
+      tags: [subjects]
+      summary: Get subject by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Subject found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subject"
+
+  /subjects/{id}/lessons:
+    get:
+      operationId: listLessons
+      tags: [subjects]
+      summary: List lessons for a subject
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Lessons list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Lesson"
+    post:
+      operationId: createLesson
+      tags: [subjects]
+      summary: Create lesson in subject
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateLessonBody"
+      responses:
+        "201":
+          description: Lesson created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Lesson"
+
+  /lessons/{id}:
+    get:
+      operationId: getLesson
+      tags: [subjects]
+      summary: Get lesson by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Lesson found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Lesson"
+
+  # ── ATTENDANCE ─────────────────────────────────────────────────────
+  /attendance/sessions:
+    get:
+      operationId: listAttendanceSessions
+      tags: [attendance]
+      summary: List attendance sessions
+      parameters:
+        - name: classId
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: sessionDate
+          in: query
+          schema:
+            type: ["string", "null"]
+      responses:
+        "200":
+          description: Attendance sessions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AttendanceSession"
+    post:
+      operationId: createAttendanceSession
+      tags: [attendance]
+      summary: Create attendance session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAttendanceSessionBody"
+      responses:
+        "201":
+          description: Session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttendanceSession"
+
+  /attendance/sessions/{id}:
+    get:
+      operationId: getAttendanceSession
+      tags: [attendance]
+      summary: Get attendance session with records
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Attendance session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttendanceSessionDetail"
+
+  /attendance/sessions/{id}/records:
+    post:
+      operationId: recordAttendance
+      tags: [attendance]
+      summary: Record attendance for session
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecordAttendanceBody"
+      responses:
+        "200":
+          description: Attendance recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecordAttendanceResponse"
+
+  /attendance/sessions/{id}/lock:
+    patch:
+      operationId: lockAttendanceSession
+      tags: [attendance]
+      summary: Lock attendance session
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Session locked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttendanceSession"
+
+  /attendance/classes/{classId}/sheet:
+    get:
+      operationId: getAttendanceSheet
+      tags: [attendance]
+      summary: Get full daily attendance sheet for a class
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: sessionDate
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Attendance sheet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttendanceSheet"
+
+  # ── RISK ENGINE ────────────────────────────────────────────────────
+  /risk/classes/{classId}:
+    get:
+      operationId: getClassRiskScores
+      tags: [risk]
+      summary: Get risk scores for all students in a class
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Class risk scores
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StudentRiskScore"
+
+  /risk/students/{studentId}/history:
+    get:
+      operationId: getStudentRiskHistory
+      tags: [risk]
+      summary: Get risk score history for a student
+      parameters:
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Risk score history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RiskScoreHistory"
+
+  /risk/alerts:
+    get:
+      operationId: listRiskAlerts
+      tags: [risk]
+      summary: List risk alerts
+      parameters:
+        - name: acknowledged
+          in: query
+          schema:
+            type: ["boolean", "null"]
+      responses:
+        "200":
+          description: Risk alerts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RiskAlert"
+
+  /risk/alerts/{id}/acknowledge:
+    patch:
+      operationId: acknowledgeRiskAlert
+      tags: [risk]
+      summary: Acknowledge risk alert
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Alert acknowledged
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RiskAlert"
+
+  /risk/run-now:
+    post:
+      operationId: runRiskEngine
+      tags: [risk]
+      summary: Run risk engine immediately (admin only)
+      responses:
+        "200":
+          description: Risk engine result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RiskEngineResult"
+
+  # ── ANALYTICS ──────────────────────────────────────────────────────
+  /analytics/kpis:
+    get:
+      operationId: getSchoolKpis
+      tags: [analytics]
+      summary: Get school-wide KPIs
+      responses:
+        "200":
+          description: School KPIs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SchoolKpis"
+
+  /analytics/attendance-trend:
+    get:
+      operationId: getAttendanceTrend
+      tags: [analytics]
+      summary: Get weekly attendance trend
+      parameters:
+        - name: weeks
+          in: query
+          schema:
+            type: integer
+            default: 8
+      responses:
+        "200":
+          description: Attendance trend
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WeeklyAttendance"
+
+  /analytics/risk-by-class:
+    get:
+      operationId: getRiskByClass
+      tags: [analytics]
+      summary: Get risk distribution by class
+      responses:
+        "200":
+          description: Risk by class
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ClassRiskSummary"
+
+  /analytics/top-at-risk:
+    get:
+      operationId: getTopAtRiskStudents
+      tags: [analytics]
+      summary: Get top at-risk students
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Top at-risk students
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AtRiskStudent"
+
+  /analytics/content-engagement:
+    get:
+      operationId: getContentEngagement
+      tags: [analytics]
+      summary: Get content engagement stats by subject
+      responses:
+        "200":
+          description: Content engagement data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SubjectEngagement"
+
+  # ── NOTIFICATIONS ──────────────────────────────────────────────────
+  /notifications:
+    get:
+      operationId: listNotifications
+      tags: [notifications]
+      summary: List notifications
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: ["string", "null"]
+            enum: [pending, sent, failed, null]
+      responses:
+        "200":
+          description: Notifications list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+
+  /notifications/{studentId}/send:
+    post:
+      operationId: sendNotification
+      tags: [notifications]
+      summary: Send manual notification to student parent
+      parameters:
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendNotificationBody"
+      responses:
+        "200":
+          description: Notification queued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +871,820 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
+
+    # ── AUTH ──────────────────────────────────────────────────────────
+    LoginBody:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+      required:
+        - username
+        - password
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+      required:
+        - token
+        - user
+
+    # ── USER ──────────────────────────────────────────────────────────
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        fullName:
+          type: string
+        role:
+          type: string
+          enum: [admin, teacher, student]
+        classId:
+          type: ["integer", "null"]
+        isActive:
+          type: boolean
+        lastLogin:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - username
+        - fullName
+        - role
+        - isActive
+        - createdAt
+
+    CreateUserBody:
+      type: object
+      properties:
+        username:
+          type: string
+        fullName:
+          type: string
+        password:
+          type: string
+        role:
+          type: string
+          enum: [admin, teacher, student]
+        classId:
+          type: ["integer", "null"]
+      required:
+        - username
+        - fullName
+        - password
+        - role
+
+    UpdateUserBody:
+      type: object
+      properties:
+        fullName:
+          type: string
+        role:
+          type: string
+          enum: [admin, teacher, student]
+        classId:
+          type: ["integer", "null"]
+        isActive:
+          type: boolean
+
+    # ── STUDENT ──────────────────────────────────────────────────────
+    Student:
+      type: object
+      properties:
+        id:
+          type: integer
+        firstName:
+          type: string
+        lastName:
+          type: string
+        nationalId:
+          type: ["string", "null"]
+        dateOfBirth:
+          type: ["string", "null"]
+        gender:
+          type: ["string", "null"]
+          enum: [male, female, null]
+        parentPhone:
+          type: ["string", "null"]
+        parentName:
+          type: ["string", "null"]
+        classId:
+          type: ["integer", "null"]
+        className:
+          type: ["string", "null"]
+        gradeLevel:
+          type: ["integer", "null"]
+        isActive:
+          type: boolean
+        enrollmentDate:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - firstName
+        - lastName
+        - isActive
+        - enrollmentDate
+        - createdAt
+
+    CreateStudentBody:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        nationalId:
+          type: ["string", "null"]
+        dateOfBirth:
+          type: ["string", "null"]
+        gender:
+          type: ["string", "null"]
+          enum: [male, female, null]
+        parentPhone:
+          type: ["string", "null"]
+        parentName:
+          type: ["string", "null"]
+        classId:
+          type: ["integer", "null"]
+      required:
+        - firstName
+        - lastName
+
+    UpdateStudentBody:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        nationalId:
+          type: ["string", "null"]
+        dateOfBirth:
+          type: ["string", "null"]
+        gender:
+          type: ["string", "null"]
+          enum: [male, female, null]
+        parentPhone:
+          type: ["string", "null"]
+        parentName:
+          type: ["string", "null"]
+        classId:
+          type: ["integer", "null"]
+        isActive:
+          type: boolean
+
+    StudentAttendanceSummary:
+      type: object
+      properties:
+        studentId:
+          type: integer
+        totalSessions:
+          type: integer
+        present:
+          type: integer
+        absent:
+          type: integer
+        late:
+          type: integer
+        excused:
+          type: integer
+        attendanceRatePct:
+          type: number
+        consecutiveAbsences:
+          type: integer
+        absentDates:
+          type: array
+          items:
+            type: string
+      required:
+        - studentId
+        - totalSessions
+        - present
+        - absent
+        - late
+        - excused
+        - attendanceRatePct
+        - consecutiveAbsences
+        - absentDates
+
+    # ── CLASS ─────────────────────────────────────────────────────────
+    Class:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        gradeLevel:
+          type: integer
+        homeroomTeacherId:
+          type: ["integer", "null"]
+        teacherName:
+          type: ["string", "null"]
+        studentCount:
+          type: integer
+        academicYear:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - name
+        - gradeLevel
+        - studentCount
+        - academicYear
+        - createdAt
+
+    CreateClassBody:
+      type: object
+      properties:
+        name:
+          type: string
+        gradeLevel:
+          type: integer
+        homeroomTeacherId:
+          type: ["integer", "null"]
+        academicYear:
+          type: string
+      required:
+        - name
+        - gradeLevel
+        - academicYear
+
+    # ── SUBJECT & LESSON ─────────────────────────────────────────────
+    Subject:
+      type: object
+      properties:
+        id:
+          type: integer
+        code:
+          type: string
+        name:
+          type: string
+        gradeLevel:
+          type: integer
+        description:
+          type: ["string", "null"]
+        isActive:
+          type: boolean
+        lessonCount:
+          type: integer
+        createdAt:
+          type: string
+      required:
+        - id
+        - code
+        - name
+        - gradeLevel
+        - isActive
+        - lessonCount
+        - createdAt
+
+    CreateSubjectBody:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        gradeLevel:
+          type: integer
+        description:
+          type: ["string", "null"]
+      required:
+        - code
+        - name
+        - gradeLevel
+
+    Lesson:
+      type: object
+      properties:
+        id:
+          type: integer
+        subjectId:
+          type: integer
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        orderIndex:
+          type: integer
+        durationMinutes:
+          type: ["integer", "null"]
+        fileType:
+          type: ["string", "null"]
+          enum: [pdf, video, html, audio, null]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - subjectId
+        - title
+        - orderIndex
+        - createdAt
+        - updatedAt
+
+    CreateLessonBody:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        orderIndex:
+          type: integer
+        durationMinutes:
+          type: ["integer", "null"]
+        fileType:
+          type: ["string", "null"]
+          enum: [pdf, video, html, audio, null]
+      required:
+        - title
+        - orderIndex
+
+    # ── ATTENDANCE ────────────────────────────────────────────────────
+    AttendanceSession:
+      type: object
+      properties:
+        id:
+          type: integer
+        classId:
+          type: integer
+        className:
+          type: ["string", "null"]
+        teacherId:
+          type: integer
+        teacherName:
+          type: ["string", "null"]
+        sessionDate:
+          type: string
+        period:
+          type: integer
+        subjectId:
+          type: ["integer", "null"]
+        subjectName:
+          type: ["string", "null"]
+        isLocked:
+          type: boolean
+        recordCount:
+          type: integer
+        presentCount:
+          type: integer
+        absentCount:
+          type: integer
+        createdAt:
+          type: string
+      required:
+        - id
+        - classId
+        - teacherId
+        - sessionDate
+        - period
+        - isLocked
+        - recordCount
+        - presentCount
+        - absentCount
+        - createdAt
+
+    CreateAttendanceSessionBody:
+      type: object
+      properties:
+        classId:
+          type: integer
+        sessionDate:
+          type: string
+        period:
+          type: integer
+        subjectId:
+          type: ["integer", "null"]
+      required:
+        - classId
+        - sessionDate
+        - period
+
+    AttendanceRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+        sessionId:
+          type: integer
+        studentId:
+          type: integer
+        studentName:
+          type: string
+        status:
+          type: string
+          enum: [present, absent, late, excused]
+        note:
+          type: ["string", "null"]
+        recordedAt:
+          type: string
+      required:
+        - id
+        - sessionId
+        - studentId
+        - studentName
+        - status
+        - recordedAt
+
+    AttendanceSessionDetail:
+      type: object
+      properties:
+        session:
+          $ref: "#/components/schemas/AttendanceSession"
+        records:
+          type: array
+          items:
+            $ref: "#/components/schemas/AttendanceRecord"
+      required:
+        - session
+        - records
+
+    RecordAttendanceBody:
+      type: object
+      properties:
+        records:
+          type: array
+          items:
+            $ref: "#/components/schemas/AttendanceInput"
+      required:
+        - records
+
+    AttendanceInput:
+      type: object
+      properties:
+        studentId:
+          type: integer
+        status:
+          type: string
+          enum: [present, absent, late, excused]
+        note:
+          type: ["string", "null"]
+      required:
+        - studentId
+        - status
+
+    RecordAttendanceResponse:
+      type: object
+      properties:
+        sessionId:
+          type: integer
+        recorded:
+          type: integer
+        skipped:
+          type: integer
+      required:
+        - sessionId
+        - recorded
+        - skipped
+
+    AttendanceSheet:
+      type: object
+      properties:
+        classId:
+          type: integer
+        className:
+          type: string
+        sessionDate:
+          type: string
+        sessions:
+          type: array
+          items:
+            $ref: "#/components/schemas/AttendanceSessionDetail"
+      required:
+        - classId
+        - className
+        - sessionDate
+        - sessions
+
+    # ── RISK ──────────────────────────────────────────────────────────
+    StudentRiskScore:
+      type: object
+      properties:
+        studentId:
+          type: integer
+        studentName:
+          type: string
+        classId:
+          type: integer
+        score:
+          type: number
+        tier:
+          type: string
+          enum: [low, medium, high, critical]
+        explanation:
+          type: array
+          items:
+            type: string
+        trend:
+          type: string
+          enum: [up, down, stable]
+        consecutiveAbsences:
+          type: integer
+        absenceRate30d:
+          type: number
+        computedAt:
+          type: string
+      required:
+        - studentId
+        - studentName
+        - classId
+        - score
+        - tier
+        - explanation
+        - trend
+        - consecutiveAbsences
+        - absenceRate30d
+        - computedAt
+
+    RiskScoreHistory:
+      type: object
+      properties:
+        date:
+          type: string
+        score:
+          type: number
+        tier:
+          type: string
+          enum: [low, medium, high, critical]
+      required:
+        - date
+        - score
+        - tier
+
+    RiskAlert:
+      type: object
+      properties:
+        id:
+          type: integer
+        studentId:
+          type: integer
+        studentName:
+          type: string
+        classId:
+          type: integer
+        className:
+          type: ["string", "null"]
+        tier:
+          type: string
+          enum: [low, medium, high, critical]
+        score:
+          type: number
+        alertType:
+          type: string
+        triggeredAt:
+          type: string
+        acknowledgedAt:
+          type: ["string", "null"]
+        acknowledgedBy:
+          type: ["string", "null"]
+      required:
+        - id
+        - studentId
+        - studentName
+        - classId
+        - tier
+        - score
+        - alertType
+        - triggeredAt
+
+    RiskEngineResult:
+      type: object
+      properties:
+        studentsScored:
+          type: integer
+        alertsCreated:
+          type: integer
+        durationMs:
+          type: integer
+      required:
+        - studentsScored
+        - alertsCreated
+        - durationMs
+
+    # ── ANALYTICS ────────────────────────────────────────────────────
+    SchoolKpis:
+      type: object
+      properties:
+        attendanceRate30d:
+          type: number
+        studentsAtRiskCount:
+          type: integer
+        studentsAtRiskPct:
+          type: number
+        activeStudents:
+          type: integer
+        totalClasses:
+          type: integer
+        totalTeachers:
+          type: integer
+        notificationsSent30d:
+          type: integer
+        alertsAcknowledgedRate:
+          type: number
+        contentEngagement7d:
+          type: number
+      required:
+        - attendanceRate30d
+        - studentsAtRiskCount
+        - studentsAtRiskPct
+        - activeStudents
+        - totalClasses
+        - totalTeachers
+        - notificationsSent30d
+        - alertsAcknowledgedRate
+        - contentEngagement7d
+
+    WeeklyAttendance:
+      type: object
+      properties:
+        weekLabel:
+          type: string
+        rate:
+          type: number
+        sessions:
+          type: integer
+        present:
+          type: integer
+        absent:
+          type: integer
+      required:
+        - weekLabel
+        - rate
+        - sessions
+        - present
+        - absent
+
+    ClassRiskSummary:
+      type: object
+      properties:
+        classId:
+          type: integer
+        className:
+          type: string
+        gradeLevel:
+          type: integer
+        teacherName:
+          type: ["string", "null"]
+        riskCounts:
+          $ref: "#/components/schemas/RiskCounts"
+        avgRiskScore:
+          type: number
+        studentCount:
+          type: integer
+      required:
+        - classId
+        - className
+        - gradeLevel
+        - riskCounts
+        - avgRiskScore
+        - studentCount
+
+    RiskCounts:
+      type: object
+      properties:
+        low:
+          type: integer
+        medium:
+          type: integer
+        high:
+          type: integer
+        critical:
+          type: integer
+      required:
+        - low
+        - medium
+        - high
+        - critical
+
+    AtRiskStudent:
+      type: object
+      properties:
+        studentId:
+          type: integer
+        studentName:
+          type: string
+        className:
+          type: string
+        gradeLevel:
+          type: integer
+        score:
+          type: number
+        tier:
+          type: string
+          enum: [low, medium, high, critical]
+        topExplanation:
+          type: string
+        consecutiveAbsences:
+          type: integer
+        parentPhone:
+          type: ["string", "null"]
+      required:
+        - studentId
+        - studentName
+        - className
+        - gradeLevel
+        - score
+        - tier
+        - topExplanation
+        - consecutiveAbsences
+
+    SubjectEngagement:
+      type: object
+      properties:
+        subjectId:
+          type: integer
+        subjectName:
+          type: string
+        lessonCount:
+          type: integer
+        uniqueStudents:
+          type: integer
+        totalViews:
+          type: integer
+      required:
+        - subjectId
+        - subjectName
+        - lessonCount
+        - uniqueStudents
+        - totalViews
+
+    # ── NOTIFICATIONS ─────────────────────────────────────────────────
+    Notification:
+      type: object
+      properties:
+        id:
+          type: integer
+        studentId:
+          type: integer
+        studentName:
+          type: ["string", "null"]
+        templateKey:
+          type: string
+        lang:
+          type: string
+          enum: [fr, ar]
+        status:
+          type: string
+          enum: [pending, sent, failed]
+        transportUsed:
+          type: ["string", "null"]
+        retries:
+          type: integer
+        sentAt:
+          type: ["string", "null"]
+        errorMessage:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - studentId
+        - templateKey
+        - lang
+        - status
+        - retries
+        - createdAt
+
+    SendNotificationBody:
+      type: object
+      properties:
+        templateKey:
+          type: string
+          enum: [absence_alert, risk_alert, quiz_failure]
+        lang:
+          type: string
+          enum: [fr, ar]
+      required:
+        - templateKey
+        - lang
