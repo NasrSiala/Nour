@@ -54,8 +54,8 @@ export default function RiskPage() {
   );
 
   const { data: alerts } = useListRiskAlerts(
-    { acknowledged: "false" },
-    { query: { queryKey: getListRiskAlertsQueryKey({ acknowledged: "false" }) } }
+    { acknowledged: false },
+    { query: { queryKey: getListRiskAlertsQueryKey({ acknowledged: false }) } }
   );
 
   const acknowledgeAlert = useAcknowledgeRiskAlert();

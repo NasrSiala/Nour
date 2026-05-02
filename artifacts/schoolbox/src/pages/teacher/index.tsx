@@ -25,8 +25,8 @@ export default function TeacherDashboard() {
     { query: { queryKey: getListAttendanceSessionsQueryKey({ sessionDate: today }) } }
   );
   const { data: alerts, isLoading: loadingAlerts } = useListRiskAlerts(
-    { acknowledged: "false" },
-    { query: { queryKey: getListRiskAlertsQueryKey({ acknowledged: "false" }) } }
+    { acknowledged: false },
+    { query: { queryKey: getListRiskAlertsQueryKey({ acknowledged: false }) } }
   );
 
   const myClasses = classes?.filter(c => c.homeroomTeacherId === user?.id) ?? [];
