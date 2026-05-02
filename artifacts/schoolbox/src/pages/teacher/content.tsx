@@ -20,7 +20,6 @@ type Lesson = {
 };
 import { useUpload } from "@workspace/object-storage-web";
 import { useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -339,29 +338,31 @@ export default function TeacherContent() {
   const totalLessons = subjects?.reduce((acc, s) => acc + (s.lessonCount ?? 0), 0) ?? 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-8">
+      {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Content Library</h1>
-          <p className="text-muted-foreground mt-1">Add lessons and attach files — students can download them instantly</p>
+          <p className="text-muted-foreground text-sm mt-0.5">Add lessons and attach files — students access them instantly</p>
         </div>
-        <div className="flex gap-3">
-          <Card className="text-center px-4 py-2 border-primary/20">
+        <div className="flex gap-3 shrink-0">
+          <div className="text-center px-4 py-2 rounded-xl bg-primary/8 border border-primary/15">
             <p className="text-xs text-muted-foreground">Subjects</p>
-            <p className="text-xl font-bold text-primary">{subjects?.length ?? 0}</p>
-          </Card>
-          <Card className="text-center px-4 py-2 border-primary/20">
-            <p className="text-xs text-muted-foreground">Total Lessons</p>
-            <p className="text-xl font-bold text-primary">{totalLessons}</p>
-          </Card>
+            <p className="text-lg font-bold text-primary">{subjects?.length ?? 0}</p>
+          </div>
+          <div className="text-center px-4 py-2 rounded-xl bg-primary/8 border border-primary/15">
+            <p className="text-xs text-muted-foreground">Lessons</p>
+            <p className="text-lg font-bold text-primary">{totalLessons}</p>
+          </div>
         </div>
       </div>
 
+      {/* Search */}
       <div className="relative">
         <BookOpen className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Search subjects…"
-          className="pl-9"
+          className="pl-9 rounded-xl"
           value={search}
           onChange={e => setSearch(e.target.value)}
         />
@@ -369,44 +370,61 @@ export default function TeacherContent() {
 
       {isLoading ? (
         <div className="space-y-3">
-          {[1, 2, 3].map(i => <Skeleton key={i} className="h-16 rounded-xl" />)}
+          {[1, 2, 3].map(i => <Skeleton key={i} className="h-[60px] rounded-2xl" />)}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-16 text-muted-foreground">
-          <BookOpen className="h-10 w-10 mx-auto mb-3 opacity-30" />
-          <p>No subjects found</p>
+        <div className="text-center py-16 rounded-2xl border border-dashed border-border bg-muted/20 text-muted-foreground">
+          <BookOpen className="h-10 w-10 mx-auto mb-3 opacity-25" />
+          <p className="font-medium">No subjects found</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {filtered.map(subject => {
             const isExpanded = expandedSubject === subject.id;
             return (
-              <Card key={subject.id} className="overflow-hidden">
-                <CardHeader className="py-3 px-4">
-                  <div className="flex items-center gap-3">
-                    <button
-                      className="flex-1 flex items-center gap-3 text-left"
-                      onClick={() => setExpandedSubject(isExpanded ? null : subject.id)}
-                    >
-                      <span className="text-muted-foreground">
-                        {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <CardTitle className="text-base">{subject.name}</CardTitle>
-                          <Badge variant="outline" className="text-xs">{subject.code}</Badge>
-                          <Badge variant="secondary" className="text-xs">Grade {subject.gradeLevel}</Badge>
-                        </div>
+              <div
+                key={subject.id}
+                className="rounded-2xl border border-border bg-white overflow-hidden transition-all duration-200 hover:border-primary/20 hover:shadow-sm"
+              >
+                {/* Row header */}
+                <div className="flex items-center gap-2 px-4 py-3.5">
+                  {/* Expand toggle + subject info */}
+                  <button
+                    className="flex-1 flex items-center gap-3 text-left min-w-0"
+                    onClick={() => setExpandedSubject(isExpanded ? null : subject.id)}
+                  >
+                    <ChevronRight
+                      className="h-4 w-4 text-muted-foreground/60 shrink-0 transition-transform duration-200"
+                      style={{ transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)" }}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-[14px] text-foreground leading-snug truncate">
+                        {subject.name}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5 font-medium">
+                        Grade {subject.gradeLevel}
+                        <span className="mx-1.5 opacity-30">·</span>
+                        <span className="font-mono">{subject.code}</span>
                         {subject.description && (
-                          <p className="text-xs text-muted-foreground mt-0.5 truncate">{subject.description}</p>
+                          <span className="ml-1.5 opacity-60 font-sans">
+                            — {subject.description.length > 55 ? subject.description.slice(0, 55) + "…" : subject.description}
+                          </span>
                         )}
-                      </div>
-                      <Badge className="shrink-0">{subject.lessonCount} lesson{subject.lessonCount !== 1 ? "s" : ""}</Badge>
-                    </button>
+                      </p>
+                    </div>
+                  </button>
+
+                  {/* Right actions — always visible */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground bg-muted/60 px-2.5 py-1 rounded-lg">
+                      <FileText className="h-3 w-3" />
+                      {subject.lessonCount} lesson{subject.lessonCount !== 1 ? "s" : ""}
+                    </span>
                     <AddLessonDialog subjectId={subject.id} subjectName={subject.name} />
                   </div>
-                </CardHeader>
+                </div>
 
+                {/* Expanded lesson list */}
                 <AnimatePresence initial={false}>
                   {isExpanded && (
                     <motion.div
@@ -414,16 +432,16 @@ export default function TeacherContent() {
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: "auto", opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
+                      transition={{ duration: 0.2, ease: "easeOut" }}
                       style={{ overflow: "hidden" }}
                     >
-                      <CardContent className="pt-0 pb-4 px-4 bg-muted/30">
+                      <div className="px-4 pb-4 pt-1 bg-muted/25 border-t border-border/60">
                         <LessonList subjectId={subject.id} />
-                      </CardContent>
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </Card>
+              </div>
             );
           })}
         </div>

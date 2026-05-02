@@ -428,26 +428,34 @@ export default function AdminSubjects() {
                   transition={{ delay: i * 0.035, duration: 0.25 }}
                   layout
                 >
-                  <div className={`relative overflow-hidden rounded-2xl border bg-white transition-all duration-200 h-full ${
-                    subject.isActive ? "border-border hover:shadow-md" : "border-border/50 opacity-60"
+                  <div className={`relative overflow-hidden rounded-2xl border bg-white transition-all duration-200 h-full flex flex-col ${
+                    subject.isActive
+                      ? "border-border hover:border-primary/20 hover:shadow-[0_4px_24px_-4px_rgba(11,40,25,0.10)]"
+                      : "border-border/40 opacity-55"
                   }`}>
-                    <div className={`h-1.5 w-full bg-gradient-to-r ${grad} ${!subject.isActive ? "opacity-40" : ""}`} />
-                    <div className="p-5">
-                      {/* Header row */}
-                      <div className="flex items-start justify-between gap-2 mb-4">
-                        <div className={`p-2.5 rounded-xl bg-gradient-to-br ${grad} shadow-sm shrink-0 ${!subject.isActive ? "opacity-50" : ""}`}>
-                          <BookOpen className="h-5 w-5 text-white" />
-                        </div>
-                        <div className="flex items-center gap-1.5 shrink-0">
+                    {/* Accent bar */}
+                    <div className={`h-[3px] w-full bg-gradient-to-r ${grad} ${!subject.isActive ? "opacity-40" : ""}`} />
+
+                    <div className="p-5 flex flex-col flex-1">
+                      {/* Title + controls row */}
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="font-bold text-[15px] leading-snug text-foreground flex-1 min-w-0">
+                          {subject.name}
+                        </h3>
+                        <div className="flex items-center gap-1 shrink-0 -mt-0.5">
                           {subject.isActive ? (
-                            <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs">Actif</Badge>
+                            <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-full">
+                              Actif
+                            </span>
                           ) : (
-                            <Badge variant="secondary" className="text-xs text-muted-foreground">Inactif</Badge>
+                            <span className="text-[10px] font-semibold text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                              Inactif
+                            </span>
                           )}
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground">
-                                <MoreVertical className="h-4 w-4" />
+                              <Button variant="ghost" size="icon" className="h-6 w-6 -mr-1 text-muted-foreground hover:text-foreground">
+                                <MoreVertical className="h-3.5 w-3.5" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-44">
@@ -472,27 +480,26 @@ export default function AdminSubjects() {
                         </div>
                       </div>
 
-                      <h3 className="font-bold text-base leading-tight">{subject.name}</h3>
-                      <p className="text-xs text-muted-foreground mt-0.5 font-mono">{subject.code}</p>
+                      {/* Grade + code — one line */}
+                      <p className="text-[11px] text-muted-foreground mt-1 font-medium">
+                        Grade {subject.gradeLevel}
+                        <span className="mx-1.5 opacity-30">·</span>
+                        <span className="font-mono">{subject.code}</span>
+                      </p>
+
+                      {/* Description */}
                       {subject.description && (
-                        <p className="text-xs text-muted-foreground mt-2 line-clamp-2 leading-relaxed">{subject.description}</p>
+                        <p className="text-[12px] text-muted-foreground mt-2.5 line-clamp-2 leading-relaxed">
+                          {subject.description}
+                        </p>
                       )}
 
-                      {/* Lesson count bar */}
-                      <div className="mt-4 pt-3 border-t border-border">
-                        <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-xs text-muted-foreground">Leçons</span>
-                          <span className="text-xs font-bold">{subject.lessonCount}</span>
-                        </div>
-                        <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full bg-gradient-to-r ${grad} transition-all duration-500`}
-                            style={{ width: `${Math.min(100, (subject.lessonCount / 20) * 100)}%` }}
-                          />
-                        </div>
-                        <div className="flex items-center gap-1.5 mt-2">
-                          <Badge variant="outline" className="text-xs">Grade {subject.gradeLevel}</Badge>
-                        </div>
+                      {/* Footer — lesson count right-aligned */}
+                      <div className="flex items-center justify-end mt-auto pt-4 border-t border-border/60 mt-4">
+                        <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground bg-muted/60 px-2.5 py-1 rounded-lg">
+                          <FileText className="h-3 w-3" />
+                          {subject.lessonCount} leçon{subject.lessonCount !== 1 ? "s" : ""}
+                        </span>
                       </div>
                     </div>
                   </div>

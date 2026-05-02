@@ -113,38 +113,37 @@ export default function SubjectsPage() {
                   layout
                 >
                   <Link href={`/student/subjects/${subject.id}`}>
-                    <div className="group relative overflow-hidden rounded-2xl border border-border bg-white hover:shadow-lg hover:border-primary/20 transition-all duration-200 cursor-pointer h-full">
-                      {/* Top gradient bar */}
-                      <div className={`h-1.5 w-full bg-gradient-to-r ${grad.from} ${grad.to}`} />
+                    <div className="group relative overflow-hidden rounded-2xl border border-border bg-white hover:border-primary/20 hover:shadow-[0_4px_24px_-4px_rgba(11,40,25,0.10)] transition-all duration-200 cursor-pointer h-full flex flex-col">
+                      {/* Accent bar */}
+                      <div className={`h-[3px] w-full bg-gradient-to-r ${grad.from} ${grad.to}`} />
 
-                      <div className="p-5">
-                        {/* Icon + title */}
-                        <div className="flex items-start justify-between gap-3 mb-4">
-                          <div className={`p-2.5 rounded-xl bg-gradient-to-br ${grad.from} ${grad.to} shadow-sm`}>
-                            <BookOpen className="h-5 w-5 text-white" />
-                          </div>
-                          <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors mt-0.5" />
+                      <div className="p-5 flex flex-col flex-1">
+                        {/* Title + arrow */}
+                        <div className="flex items-start justify-between gap-2">
+                          <h3 className="font-bold text-[15px] leading-snug text-foreground group-hover:text-primary transition-colors flex-1 min-w-0">
+                            {subject.name}
+                          </h3>
+                          <ChevronRight className="h-4 w-4 text-muted-foreground/50 group-hover:text-primary transition-colors mt-0.5 shrink-0" />
                         </div>
 
-                        <h3 className="font-bold text-base leading-tight group-hover:text-primary transition-colors">
-                          {subject.name}
-                        </h3>
-                        <p className="text-xs text-muted-foreground mt-0.5">{subject.code}</p>
+                        {/* Grade + code — one line */}
+                        <p className="text-[11px] text-muted-foreground mt-1 font-medium">
+                          Grade {subject.gradeLevel}
+                          <span className="mx-1.5 opacity-30">·</span>
+                          <span className="font-mono">{subject.code}</span>
+                        </p>
 
                         {subject.description && (
-                          <p className="text-xs text-muted-foreground mt-2 line-clamp-2 leading-relaxed">
+                          <p className="text-[12px] text-muted-foreground mt-2.5 line-clamp-2 leading-relaxed">
                             {subject.description}
                           </p>
                         )}
 
-                        {/* Footer chips */}
-                        <div className="flex items-center gap-2 mt-4 flex-wrap">
-                          <Badge variant="outline" className={`text-xs ${grad.text} border-current/30 ${grad.light}`}>
-                            Grade {subject.gradeLevel}
-                          </Badge>
-                          <Badge variant="secondary" className="text-xs">
+                        {/* Footer — lesson count right-aligned */}
+                        <div className="flex items-center justify-end mt-auto pt-4 border-t border-border/60 mt-4">
+                          <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-lg ${grad.light} ${grad.text}`}>
                             {subject.lessonCount} leçon{subject.lessonCount !== 1 ? "s" : ""}
-                          </Badge>
+                          </span>
                         </div>
                       </div>
                     </div>
