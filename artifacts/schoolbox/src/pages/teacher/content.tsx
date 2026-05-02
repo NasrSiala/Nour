@@ -5,8 +5,19 @@ import {
   useListLessons,
   getListLessonsQueryKey,
   useCreateLesson,
-  Lesson,
 } from "@workspace/api-client-react";
+
+type Lesson = {
+  id: number;
+  subjectId: number;
+  title: string;
+  description?: string | null;
+  fileType?: string | null;
+  durationMinutes?: number | null;
+  orderIndex?: number | null;
+  fileUrl?: string | null;
+  fileName?: string | null;
+};
 import { useUpload } from "@workspace/object-storage-web";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
