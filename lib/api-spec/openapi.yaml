@@ -28,8 +28,29 @@ tags:
     description: Admin analytics and KPIs
   - name: notifications
     description: Parent notifications
+  - name: storage
+    description: Object storage operations
 
 paths:
+  /storage/uploads/request-url:
+    post:
+      operationId: requestUploadUrl
+      tags: [storage]
+      summary: Request a presigned URL for file upload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequestUploadUrlBody"
+      responses:
+        "200":
+          description: Presigned URL generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RequestUploadUrlResponse"
+
   /healthz:
     get:
       operationId: healthCheck
@@ -1201,6 +1222,10 @@ components:
         fileType:
           type: ["string", "null"]
           enum: [pdf, video, html, audio, null]
+        fileUrl:
+          type: ["string", "null"]
+        fileName:
+          type: ["string", "null"]
         createdAt:
           type: string
         updatedAt:
@@ -1638,6 +1663,43 @@ components:
         - lessonCount
         - uniqueStudents
         - totalViews
+
+    # ── STORAGE ───────────────────────────────────────────────────────
+    RequestUploadUrlBody:
+      type: object
+      properties:
+        name:
+          type: string
+        size:
+          type: integer
+        contentType:
+          type: string
+      required:
+        - name
+        - size
+        - contentType
+
+    RequestUploadUrlResponse:
+      type: object
+      properties:
+        uploadURL:
+          type: string
+        objectPath:
+          type: string
+        metadata:
+          type: object
+          properties:
+            name:
+              type: string
+            size:
+              type: integer
+            contentType:
+              type: string
+          required: [name, size, contentType]
+      required:
+        - uploadURL
+        - objectPath
+        - metadata
 
     # ── NOTIFICATIONS ─────────────────────────────────────────────────
     Notification:

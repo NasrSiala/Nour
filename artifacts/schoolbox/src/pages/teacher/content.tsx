@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   useListSubjects,
   getListSubjectsQueryKey,
@@ -7,6 +7,7 @@ import {
   useCreateLesson,
   Lesson,
 } from "@workspace/api-client-react";
+import { useUpload } from "@workspace/object-storage-web";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,9 +18,25 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { BookOpen, Plus, FileText, Video, Headphones, ChevronDown, ChevronRight, Clock } from "lucide-react";
+import {
+  BookOpen,
+  Plus,
+  FileText,
+  Video,
+  Headphones,
+  ChevronDown,
+  ChevronRight,
+  Clock,
+  Upload,
+  Download,
+  Paperclip,
+  X,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 const fileTypeIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   pdf: FileText,
@@ -35,10 +52,84 @@ const fileTypeColors: Record<string, string> = {
   html: "bg-gray-100 text-gray-700",
 };
 
+const ALLOWED_TYPES: Record<string, string[]> = {
+  pdf: ["application/pdf"],
+  video: ["video/mp4", "video/webm", "video/ogg", "video/*"],
+  audio: ["audio/mpeg", "audio/ogg", "audio/wav", "audio/*"],
+  html: ["text/html", "text/plain", "application/zip"],
+};
+
+function FileUploadButton({ lesson, onDone }: { lesson: Lesson; onDone: () => void }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+  const { uploadFile, isUploading, progress } = useUpload({
+    basePath: `${BASE}/api/storage`,
+    onSuccess: async (response) => {
+      try {
+        await fetch(`${BASE}/api/lessons/${lesson.id}/file`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fileUrl: `${BASE}/api/storage${response.objectPath}`,
+            fileName: response.metadata.name,
+          }),
+        });
+        toast({ title: "File uploaded successfully" });
+        onDone();
+      } catch {
+        toast({ title: "Failed to save file reference", variant: "destructive" });
+      }
+    },
+    onError: () => {
+      toast({ title: "Upload failed", variant: "destructive" });
+    },
+  });
+
+  const accept = lesson.fileType ? ALLOWED_TYPES[lesson.fileType]?.join(",") ?? "*" : "*";
+
+  return (
+    <div className="space-y-1">
+      <input
+        ref={inputRef}
+        type="file"
+        className="hidden"
+        accept={accept}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) uploadFile(file);
+          e.target.value = "";
+        }}
+      />
+      {isUploading ? (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="shrink-0">Uploading…</span>
+          <Progress value={progress} className="h-1.5 flex-1" />
+          <span className="shrink-0">{progress}%</span>
+        </div>
+      ) : (
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-primary"
+          onClick={() => inputRef.current?.click()}
+        >
+          <Upload className="h-3 w-3" />
+          {lesson.fileUrl ? "Replace file" : "Attach file"}
+        </Button>
+      )}
+    </div>
+  );
+}
+
 function LessonList({ subjectId }: { subjectId: number }) {
+  const queryClient = useQueryClient();
   const { data: lessons, isLoading } = useListLessons(subjectId, {
     query: { queryKey: getListLessonsQueryKey(subjectId) },
   });
+
+  const refetch = () => {
+    queryClient.invalidateQueries({ queryKey: getListLessonsQueryKey(subjectId) });
+  };
 
   if (isLoading) return <Skeleton className="h-16 rounded-lg" />;
   if (!lessons?.length) {
@@ -58,23 +149,47 @@ function LessonList({ subjectId }: { subjectId: number }) {
             key={lesson.id}
             initial={{ opacity: 0, x: -8 }}
             animate={{ opacity: 1, x: 0 }}
-            className="flex items-start gap-3 p-3 rounded-lg bg-white border border-border"
+            className="flex flex-col gap-2 p-3 rounded-lg bg-white border border-border"
           >
-            <span className={`p-1.5 rounded text-xs font-medium ${fileTypeColors[lesson.fileType ?? "text"]}`}>
-              <Icon className="h-3.5 w-3.5" />
-            </span>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{lesson.title}</p>
-              {lesson.description && (
-                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{lesson.description}</p>
-              )}
-            </div>
-            {lesson.durationMinutes && (
-              <span className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
-                <Clock className="h-3 w-3" />
-                {lesson.durationMinutes}m
+            <div className="flex items-start gap-3">
+              <span className={`p-1.5 rounded text-xs font-medium shrink-0 ${fileTypeColors[lesson.fileType ?? "html"]}`}>
+                <Icon className="h-3.5 w-3.5" />
               </span>
-            )}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{lesson.title}</p>
+                {lesson.description && (
+                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{lesson.description}</p>
+                )}
+                {lesson.fileName && (
+                  <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+                    <Paperclip className="h-3 w-3 shrink-0" />
+                    <span className="truncate">{lesson.fileName}</span>
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {lesson.durationMinutes && (
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Clock className="h-3 w-3" />
+                    {lesson.durationMinutes}m
+                  </span>
+                )}
+                {lesson.fileUrl && (
+                  <a
+                    href={lesson.fileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-xs text-primary hover:underline"
+                  >
+                    <Download className="h-3 w-3" />
+                    Open
+                  </a>
+                )}
+              </div>
+            </div>
+            <div className="pl-8">
+              <FileUploadButton lesson={lesson} onDone={refetch} />
+            </div>
           </motion.div>
         );
       })}
@@ -109,7 +224,7 @@ function AddLessonDialog({ subjectId, subjectName }: { subjectId: number; subjec
       });
       queryClient.invalidateQueries({ queryKey: getListLessonsQueryKey(subjectId) });
       queryClient.invalidateQueries({ queryKey: getListSubjectsQueryKey({}) });
-      toast({ title: "Lesson added successfully" });
+      toast({ title: "Lesson added — you can now attach a file to it" });
       setTitle("");
       setDescription("");
       setDuration("");
@@ -181,6 +296,10 @@ function AddLessonDialog({ subjectId, subjectName }: { subjectId: number; subjec
               />
             </div>
           </div>
+          <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+            <Upload className="h-3 w-3" />
+            After creating, you can attach a file directly on the lesson card.
+          </p>
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
             <Button type="submit" disabled={!title.trim() || createLesson.isPending}>
@@ -213,7 +332,7 @@ export default function TeacherContent() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Content Library</h1>
-          <p className="text-muted-foreground mt-1">Add lessons to subjects — students see them instantly</p>
+          <p className="text-muted-foreground mt-1">Add lessons and attach files — students can download them instantly</p>
         </div>
         <div className="flex gap-3">
           <Card className="text-center px-4 py-2 border-primary/20">

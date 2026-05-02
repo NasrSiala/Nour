@@ -74,6 +74,8 @@ router.get("/subjects/:id/lessons", requireAuth, async (req, res): Promise<void>
     orderIndex: l.orderIndex,
     durationMinutes: l.durationMinutes,
     fileType: l.fileType,
+    fileUrl: l.fileUrl,
+    fileName: l.fileName,
     createdAt: l.createdAt.toISOString(),
     updatedAt: l.updatedAt.toISOString(),
   })));
@@ -98,6 +100,8 @@ router.post("/subjects/:id/lessons", requireAuth, async (req, res): Promise<void
     orderIndex: lesson.orderIndex,
     durationMinutes: lesson.durationMinutes,
     fileType: lesson.fileType,
+    fileUrl: lesson.fileUrl,
+    fileName: lesson.fileName,
     createdAt: lesson.createdAt.toISOString(),
     updatedAt: lesson.updatedAt.toISOString(),
   });
@@ -121,8 +125,46 @@ router.get("/lessons/:id", requireAuth, async (req, res): Promise<void> => {
     orderIndex: lesson.orderIndex,
     durationMinutes: lesson.durationMinutes,
     fileType: lesson.fileType,
+    fileUrl: lesson.fileUrl,
+    fileName: lesson.fileName,
     createdAt: lesson.createdAt.toISOString(),
     updatedAt: lesson.updatedAt.toISOString(),
+  });
+});
+
+router.patch("/lessons/:id/file", requireAuth, async (req, res): Promise<void> => {
+  const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const id = parseInt(raw, 10);
+  const { fileUrl, fileName } = req.body ?? {};
+
+  if (typeof fileUrl !== "string" || !fileUrl) {
+    res.status(400).json({ error: "fileUrl is required" });
+    return;
+  }
+
+  const [updated] = await db
+    .update(lessonsTable)
+    .set({ fileUrl, fileName: typeof fileName === "string" ? fileName : null })
+    .where(eq(lessonsTable.id, id))
+    .returning();
+
+  if (!updated) {
+    res.status(404).json({ error: "Lesson not found" });
+    return;
+  }
+
+  res.json({
+    id: updated.id,
+    subjectId: updated.subjectId,
+    title: updated.title,
+    description: updated.description,
+    orderIndex: updated.orderIndex,
+    durationMinutes: updated.durationMinutes,
+    fileType: updated.fileType,
+    fileUrl: updated.fileUrl,
+    fileName: updated.fileName,
+    createdAt: updated.createdAt.toISOString(),
+    updatedAt: updated.updatedAt.toISOString(),
   });
 });
 

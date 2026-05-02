@@ -8,6 +8,25 @@
 import * as zod from "zod";
 
 /**
+ * @summary Request a presigned URL for file upload
+ */
+export const RequestUploadUrlBody = zod.object({
+  name: zod.string(),
+  size: zod.number(),
+  contentType: zod.string(),
+});
+
+export const RequestUploadUrlResponse = zod.object({
+  uploadURL: zod.string(),
+  objectPath: zod.string(),
+  metadata: zod.object({
+    name: zod.string(),
+    size: zod.number(),
+    contentType: zod.string(),
+  }),
+});
+
+/**
  * Returns server health status
  * @summary Health check
  */
@@ -424,6 +443,8 @@ export const ListLessonsResponseItem = zod.object({
       zod.literal(null),
     ])
     .nullish(),
+  fileUrl: zod.string().nullish(),
+  fileName: zod.string().nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -475,6 +496,8 @@ export const GetLessonResponse = zod.object({
       zod.literal(null),
     ])
     .nullish(),
+  fileUrl: zod.string().nullish(),
+  fileName: zod.string().nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });

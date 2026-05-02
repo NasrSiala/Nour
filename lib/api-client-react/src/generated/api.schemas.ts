@@ -257,6 +257,10 @@ export interface Lesson {
   durationMinutes?: number | null;
   /** @nullable */
   fileType?: LessonFileType;
+  /** @nullable */
+  fileUrl?: string | null;
+  /** @nullable */
+  fileName?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -522,6 +526,24 @@ export interface SubjectEngagement {
   lessonCount: number;
   uniqueStudents: number;
   totalViews: number;
+}
+
+export interface RequestUploadUrlBody {
+  name: string;
+  size: number;
+  contentType: string;
+}
+
+export type RequestUploadUrlResponseMetadata = {
+  name: string;
+  size: number;
+  contentType: string;
+};
+
+export interface RequestUploadUrlResponse {
+  uploadURL: string;
+  objectPath: string;
+  metadata: RequestUploadUrlResponseMetadata;
 }
 
 export type NotificationLang =

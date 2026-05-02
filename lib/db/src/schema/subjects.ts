@@ -21,6 +21,8 @@ export const lessonsTable = pgTable("lessons", {
   orderIndex: integer("order_index").notNull().default(0),
   durationMinutes: integer("duration_minutes"),
   fileType: text("file_type", { enum: ["pdf", "video", "html", "audio"] }),
+  fileUrl: text("file_url"),
+  fileName: text("file_name"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

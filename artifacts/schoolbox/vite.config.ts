@@ -50,6 +50,7 @@ export default defineConfig({
     alias: {
       "@": path.resolve(import.meta.dirname, "src"),
       "@assets": path.resolve(import.meta.dirname, "..", "..", "attached_assets"),
+      "@workspace/object-storage-web": path.resolve(import.meta.dirname, "../../lib/object-storage-web/src/index.ts"),
     },
     dedupe: ["react", "react-dom"],
   },

@@ -9,6 +9,7 @@ import attendanceRouter from "./attendance";
 import riskRouter from "./risk";
 import analyticsRouter from "./analytics";
 import notificationsRouter from "./notifications";
+import storageRouter from "./storage";
 
 const router: IRouter = Router();
 
@@ -22,5 +23,6 @@ router.use(attendanceRouter);
 router.use(riskRouter);
 router.use(analyticsRouter);
 router.use(notificationsRouter);
+router.use(storageRouter);
 
 export default router;
