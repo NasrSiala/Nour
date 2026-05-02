@@ -1,5 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { runRiskEngine } from "./lib/risk-engine";
 
 const rawPort = process.env["PORT"];
 
@@ -22,4 +23,14 @@ app.listen(port, (err) => {
   }
 
   logger.info({ port }, "Server listening");
+
+  // Auto-run risk engine on startup to ensure fresh scores
+  setImmediate(async () => {
+    try {
+      const result = await runRiskEngine();
+      logger.info(result, "Startup risk engine run completed");
+    } catch (err) {
+      logger.error({ err }, "Startup risk engine run failed");
+    }
+  });
 });

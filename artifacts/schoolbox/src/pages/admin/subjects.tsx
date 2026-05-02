@@ -60,6 +60,12 @@ import {
   ArrowUpDown,
   Keyboard,
   UserCheck,
+  Upload,
+  FileSpreadsheet,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Download,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -198,6 +204,26 @@ function SubjectFormFields({
   );
 }
 
+type ParsedRow = { code: string; name: string; gradeLevel: number; description: string; teacherUsername: string; _valid: boolean; _error?: string };
+
+function parseCSV(text: string): ParsedRow[] {
+  const lines = text.trim().split(/\r?\n/);
+  if (lines.length < 2) return [];
+  const rows: ParsedRow[] = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cols = lines[i].split(",").map(c => c.trim().replace(/^"|"$/g, ""));
+    const [code = "", name = "", gradeLevelRaw = "", description = "", teacherUsername = ""] = cols;
+    const gradeLevel = parseInt(gradeLevelRaw, 10);
+    const valid = !!code && !!name && !isNaN(gradeLevel) && gradeLevel >= 1 && gradeLevel <= 12;
+    rows.push({ code: code.toUpperCase(), name, gradeLevel: isNaN(gradeLevel) ? 0 : gradeLevel, description, teacherUsername, _valid: valid, _error: !valid ? "Code, name, and valid grade (1-12) are required" : undefined });
+  }
+  return rows;
+}
+
+const CSV_TEMPLATE = `code,name,gradeLevel,description,teacherUsername\nMATH-G3,Mathématiques Grade 3,3,Arithmétique et géométrie,teacher1\nFR-G3,Français Grade 3,3,Lecture et expression écrite,\n`;
+
+type ImportResult = { created: number; skipped: number; errors: number; results: { row: number; status: string; code?: string; reason?: string }[] };
+
 export default function AdminSubjects() {
   const [search, setSearch] = useState("");
   const [gradeFilter, setGradeFilter] = useState("all");
@@ -209,6 +235,10 @@ export default function AdminSubjects() {
   const [editForm, setEditForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importRows, setImportRows] = useState<ParsedRow[]>([]);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<ImportResult | null>(null);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -229,6 +259,48 @@ export default function AdminSubjects() {
       onError: () => toast({ title: "Erreur", description: "Impossible de créer la matière.", variant: "destructive" }),
     },
   });
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const text = ev.target?.result as string;
+      setImportRows(parseCSV(text));
+      setImportResult(null);
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
+
+  const handleImportSubmit = async () => {
+    const valid = importRows.filter(r => r._valid);
+    if (!valid.length) return;
+    setImporting(true);
+    try {
+      const token = localStorage.getItem("schoolbox_token");
+      const res = await fetch(`${BASE}/api/subjects/bulk`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ rows: valid.map(r => ({ code: r.code, name: r.name, gradeLevel: r.gradeLevel, description: r.description || null, teacherUsername: r.teacherUsername || null })) }),
+      });
+      const data: ImportResult = await res.json();
+      setImportResult(data);
+      queryClient.invalidateQueries({ queryKey: getListSubjectsQueryKey({}) });
+      toast({ title: `Import terminé`, description: `${data.created} créées · ${data.skipped} ignorées · ${data.errors} erreurs` });
+    } catch {
+      toast({ title: "Erreur lors de l'import", variant: "destructive" });
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const downloadTemplate = () => {
+    const blob = new Blob([CSV_TEMPLATE], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = "subjects_template.csv"; a.click();
+    URL.revokeObjectURL(url);
+  };
 
   // Keyboard shortcut: N = new subject
   useEffect(() => {
@@ -359,11 +431,15 @@ export default function AdminSubjects() {
           <h1 className="text-2xl font-bold tracking-tight">Matières</h1>
           <p className="text-muted-foreground text-sm mt-0.5">Gérez le programme pédagogique</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground border border-border rounded-lg px-2.5 py-1.5">
             <Keyboard className="h-3.5 w-3.5" />
             Appuyez sur <kbd className="font-mono font-bold">N</kbd> pour créer
           </span>
+          <Button variant="outline" className="gap-2" onClick={() => { setImportOpen(true); setImportRows([]); setImportResult(null); }}>
+            <FileSpreadsheet className="h-4 w-4" />
+            Importer CSV
+          </Button>
           <Button className="gap-2" onClick={() => setCreateOpen(true)}>
             <Plus className="h-4 w-4" />
             Nouvelle matière
@@ -605,6 +681,146 @@ export default function AdminSubjects() {
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* CSV IMPORT dialog */}
+      <Dialog open={importOpen} onOpenChange={v => { setImportOpen(v); if (!v) { setImportRows([]); setImportResult(null); } }}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-violet-50">
+                <FileSpreadsheet className="h-4 w-4 text-violet-600" />
+              </div>
+              Importer des matières depuis un CSV
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto space-y-4 pt-2">
+            {/* Format guide */}
+            <div className="rounded-xl border border-border bg-muted/40 p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Format requis</p>
+                <button
+                  onClick={downloadTemplate}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline"
+                >
+                  <Download className="h-3.5 w-3.5" /> Télécharger le modèle
+                </button>
+              </div>
+              <code className="text-xs font-mono text-muted-foreground block">
+                code, name, gradeLevel, description, teacherUsername
+              </code>
+              <p className="text-[11px] text-muted-foreground">La colonne <strong>teacherUsername</strong> est optionnelle. Le grade doit être entre 1 et 12.</p>
+            </div>
+
+            {/* File picker */}
+            {!importResult && (
+              <label className="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border hover:border-primary/50 bg-muted/20 hover:bg-primary/5 p-8 cursor-pointer transition-colors">
+                <div className="p-3 rounded-full bg-primary/10">
+                  <Upload className="h-5 w-5 text-primary" />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-semibold">Cliquez pour sélectionner un fichier CSV</p>
+                  <p className="text-xs text-muted-foreground mt-1">ou glissez-déposez ici</p>
+                </div>
+                <input type="file" accept=".csv,text/csv" className="hidden" onChange={handleFileChange} />
+              </label>
+            )}
+
+            {/* Preview table */}
+            {importRows.length > 0 && !importResult && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold">{importRows.length} lignes détectées</p>
+                  <div className="flex items-center gap-3 text-xs">
+                    <span className="flex items-center gap-1 text-emerald-600 font-semibold"><CheckCircle className="h-3.5 w-3.5" /> {importRows.filter(r => r._valid).length} valides</span>
+                    {importRows.some(r => !r._valid) && (
+                      <span className="flex items-center gap-1 text-red-500 font-semibold"><XCircle className="h-3.5 w-3.5" /> {importRows.filter(r => !r._valid).length} invalides</span>
+                    )}
+                  </div>
+                </div>
+                <div className="rounded-xl border border-border overflow-hidden">
+                  <div className="overflow-x-auto max-h-48">
+                    <table className="w-full text-xs border-collapse">
+                      <thead>
+                        <tr className="bg-muted/60 border-b border-border">
+                          {["#", "Code", "Nom", "Grade", "Description", "Enseignant", ""].map(h => (
+                            <th key={h} className="px-3 py-2 text-left font-semibold text-muted-foreground whitespace-nowrap">{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {importRows.map((row, i) => (
+                          <tr key={i} className={`border-b border-border/50 ${row._valid ? "" : "bg-red-50"}`}>
+                            <td className="px-3 py-2 text-muted-foreground font-mono">{i + 1}</td>
+                            <td className="px-3 py-2 font-mono font-bold">{row.code || <span className="text-red-400">—</span>}</td>
+                            <td className="px-3 py-2 max-w-32 truncate">{row.name || <span className="text-red-400">—</span>}</td>
+                            <td className="px-3 py-2">{row.gradeLevel > 0 ? `G${row.gradeLevel}` : <span className="text-red-400">—</span>}</td>
+                            <td className="px-3 py-2 max-w-40 truncate text-muted-foreground">{row.description || "—"}</td>
+                            <td className="px-3 py-2 text-muted-foreground">{row.teacherUsername || "—"}</td>
+                            <td className="px-3 py-2">
+                              {row._valid
+                                ? <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />
+                                : <span title={row._error}><AlertCircle className="h-3.5 w-3.5 text-red-500" /></span>
+                              }
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Result */}
+            {importResult && (
+              <div className="rounded-xl border border-border p-5 space-y-4">
+                <p className="text-sm font-bold">Résultat de l'import</p>
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { label: "Créées", value: importResult.created, color: "text-emerald-600 bg-emerald-50", icon: CheckCircle },
+                    { label: "Ignorées", value: importResult.skipped, color: "text-amber-600 bg-amber-50", icon: AlertCircle },
+                    { label: "Erreurs", value: importResult.errors, color: "text-red-600 bg-red-50", icon: XCircle },
+                  ].map(s => (
+                    <div key={s.label} className={`rounded-xl p-4 ${s.color.split(" ")[1]} flex flex-col items-center gap-1`}>
+                      <s.icon className={`h-5 w-5 ${s.color.split(" ")[0]}`} />
+                      <p className={`text-2xl font-black ${s.color.split(" ")[0]}`}>{s.value}</p>
+                      <p className="text-xs font-semibold text-muted-foreground">{s.label}</p>
+                    </div>
+                  ))}
+                </div>
+                {importResult.results.filter(r => r.status !== "created").map(r => (
+                  <div key={r.row} className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span className="font-mono text-muted-foreground/60">Ligne {r.row}</span>
+                    <span className="font-mono font-semibold">{r.code}</span>
+                    <span>—</span>
+                    <span className="text-amber-600">{r.reason}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="flex gap-3 pt-4 border-t border-border">
+            <button
+              onClick={() => { setImportOpen(false); setImportRows([]); setImportResult(null); }}
+              className="flex-1 px-4 py-2 rounded-lg border border-border text-sm font-semibold hover:bg-muted transition-colors"
+            >
+              {importResult ? "Fermer" : "Annuler"}
+            </button>
+            {!importResult && importRows.filter(r => r._valid).length > 0 && (
+              <button
+                onClick={handleImportSubmit}
+                disabled={importing}
+                className="flex-1 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold flex items-center justify-center gap-2 hover:bg-primary/90 disabled:opacity-50 transition-colors"
+              >
+                {importing ? <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <Upload className="h-4 w-4" />}
+                {importing ? "Import en cours…" : `Importer ${importRows.filter(r => r._valid).length} matière${importRows.filter(r => r._valid).length !== 1 ? "s" : ""}`}
+              </button>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
 

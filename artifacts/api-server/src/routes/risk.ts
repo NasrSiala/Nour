@@ -1,72 +1,11 @@
 import { Router, type IRouter } from "express";
-import { db, riskScoresTable, riskAlertsTable, studentsTable, classesTable, usersTable, attendanceRecordsTable, attendanceSessionsTable } from "@workspace/db";
+import { db, riskScoresTable, riskAlertsTable, studentsTable, classesTable, usersTable, attendanceSessionsTable } from "@workspace/db";
 import { eq, and, desc, isNull } from "drizzle-orm";
 import { requireAuth, requireRole } from "../middlewares/auth";
 import { logger } from "../lib/logger";
+import { computeRiskScore, runRiskEngine } from "../lib/risk-engine";
 
 const router: IRouter = Router();
-
-function scoreToTier(score: number): "low" | "medium" | "high" | "critical" {
-  if (score < 0.3) return "low";
-  if (score < 0.6) return "medium";
-  if (score < 0.8) return "high";
-  return "critical";
-}
-
-async function computeRiskScore(studentId: number, classId: number): Promise<{
-  score: number;
-  tier: "low" | "medium" | "high" | "critical";
-  explanation: string[];
-  features: Record<string, number>;
-}> {
-  const now = new Date();
-  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-
-  const records = await db.select().from(attendanceRecordsTable)
-    .where(and(
-      eq(attendanceRecordsTable.studentId, studentId),
-      eq(attendanceRecordsTable.sessionId, attendanceRecordsTable.sessionId),
-    ));
-
-  const recentRecords = records.filter(r => r.recordedAt >= thirtyDaysAgo);
-  const totalRecent = recentRecords.length;
-  const absentRecent = recentRecords.filter(r => r.status === "absent").length;
-  const absentRate30d = totalRecent > 0 ? absentRecent / totalRecent : 0;
-
-  // Consecutive absences (from most recent)
-  let consecutiveAbsences = 0;
-  const sortedRecords = [...records].sort((a, b) => b.recordedAt.getTime() - a.recordedAt.getTime());
-  for (const r of sortedRecords) {
-    if (r.status === "absent") consecutiveAbsences++;
-    else break;
-  }
-
-  // Simple risk score computation
-  const score = Math.min(1.0,
-    absentRate30d * 0.5 +
-    Math.min(consecutiveAbsences, 14) / 14 * 0.35 +
-    (totalRecent < 3 ? 0.15 : 0)
-  );
-
-  const tier = scoreToTier(score);
-  const explanation: string[] = [];
-
-  if (consecutiveAbsences >= 5) explanation.push(`Absent ${consecutiveAbsences} consecutive days`);
-  if (absentRate30d > 0.4) explanation.push(`Absence rate ${Math.round(absentRate30d * 100)}% this month`);
-  if (totalRecent < 3) explanation.push("Insufficient attendance data");
-  if (explanation.length === 0) explanation.push("Attendance patterns are within normal range");
-
-  return {
-    score,
-    tier,
-    explanation,
-    features: {
-      absentRate30d,
-      consecutiveAbsences,
-      totalRecentSessions: totalRecent,
-    },
-  };
-}
 
 router.get("/risk/classes/:classId", requireAuth, async (req, res): Promise<void> => {
   const raw = Array.isArray(req.params.classId) ? req.params.classId[0] : req.params.classId;
@@ -230,47 +169,9 @@ router.patch("/risk/alerts/:id/acknowledge", requireAuth, async (req, res): Prom
 });
 
 router.post("/risk/run-now", requireAuth, requireRole("admin"), async (req, res): Promise<void> => {
-  const startTime = Date.now();
-  let studentsScored = 0;
-  let alertsCreated = 0;
-
-  const students = await db.select().from(studentsTable).where(eq(studentsTable.isActive, true));
-
-  for (const student of students) {
-    if (!student.classId) continue;
-    try {
-      const computed = await computeRiskScore(student.id, student.classId);
-      const [score] = await db.insert(riskScoresTable).values({
-        studentId: student.id,
-        classId: student.classId,
-        score: computed.score,
-        tier: computed.tier,
-        featuresJson: computed.features,
-        explanationJson: computed.explanation,
-      }).returning();
-
-      studentsScored++;
-
-      if (computed.tier === "high" || computed.tier === "critical") {
-        await db.insert(riskAlertsTable).values({
-          riskScoreId: score.id,
-          studentId: student.id,
-          classId: student.classId,
-          alertType: `risk_${computed.tier}`,
-          notificationSent: false,
-        });
-        alertsCreated++;
-      }
-    } catch (err) {
-      logger.error({ err, studentId: student.id }, "Error computing risk score");
-    }
-  }
-
-  res.json({
-    studentsScored,
-    alertsCreated,
-    durationMs: Date.now() - startTime,
-  });
+  const result = await runRiskEngine();
+  logger.info(result, "Risk engine run completed");
+  res.json(result);
 });
 
 export default router;

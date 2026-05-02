@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db, subjectsTable, lessonsTable, usersTable } from "@workspace/db";
 import { eq, count } from "drizzle-orm";
-import { requireAuth } from "../middlewares/auth";
+import { requireAuth, requireRole } from "../middlewares/auth";
 import { CreateSubjectBody, CreateLessonBody } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -183,6 +183,61 @@ router.delete("/subjects/:id", requireAuth, async (req, res): Promise<void> => {
   if (!deleted) { res.status(404).json({ error: "Subject not found" }); return; }
 
   res.status(204).send();
+});
+
+router.post("/subjects/bulk", requireAuth, requireRole("admin"), async (req, res): Promise<void> => {
+  const body = req.body as { rows?: unknown };
+  if (!body || !Array.isArray(body.rows) || body.rows.length === 0 || body.rows.length > 500) {
+    res.status(400).json({ error: "rows must be a non-empty array (max 500)" });
+    return;
+  }
+
+  type BulkRow = { code: string; name: string; gradeLevel: number; description?: string | null; teacherUsername?: string | null };
+  const rows = body.rows as BulkRow[];
+  const results: { row: number; status: "created" | "skipped" | "error"; code?: string; reason?: string }[] = [];
+
+  // Pre-load all teachers once for username→id lookup
+  const teachers = await db.select({ id: usersTable.id, username: usersTable.username }).from(usersTable);
+  const teacherMap = new Map(teachers.map(t => [t.username.toLowerCase(), t.id]));
+
+  // Pre-load existing codes to detect duplicates
+  const existing = await db.select({ code: subjectsTable.code }).from(subjectsTable);
+  const existingCodes = new Set(existing.map(s => s.code.toUpperCase()));
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const code = row.code.toUpperCase().trim();
+
+    if (existingCodes.has(code)) {
+      results.push({ row: i + 1, status: "skipped", code, reason: "Code already exists" });
+      continue;
+    }
+
+    try {
+      const teacherId = row.teacherUsername
+        ? (teacherMap.get(row.teacherUsername.toLowerCase()) ?? null)
+        : null;
+
+      await db.insert(subjectsTable).values({
+        code,
+        name: row.name.trim(),
+        gradeLevel: row.gradeLevel,
+        description: row.description?.trim() || null,
+        teacherId,
+      });
+
+      existingCodes.add(code);
+      results.push({ row: i + 1, status: "created", code });
+    } catch {
+      results.push({ row: i + 1, status: "error", code, reason: "Database error" });
+    }
+  }
+
+  const created = results.filter(r => r.status === "created").length;
+  const skipped = results.filter(r => r.status === "skipped").length;
+  const errors = results.filter(r => r.status === "error").length;
+
+  res.status(207).json({ created, skipped, errors, results });
 });
 
 router.patch("/lessons/:id/file", requireAuth, async (req, res): Promise<void> => {

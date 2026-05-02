@@ -1,12 +1,17 @@
+import { useState } from "react";
 import { useGetSchoolKpis, useGetAttendanceTrend, useGetRiskByClass, useGetTopAtRiskStudents } from "@workspace/api-client-react";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis,
   CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
-import { Users, ArrowRight, GraduationCap, BookOpen, ShieldCheck, Bell, ArrowUpRight } from "lucide-react";
+import { Users, ArrowRight, GraduationCap, BookOpen, ShieldCheck, Bell, ArrowUpRight, RefreshCw } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
+import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 const DARK = "#0B2819";
 
@@ -38,6 +43,28 @@ export default function AdminDashboard() {
   const { data: riskByClass, isLoading: lr } = useGetRiskByClass();
   const { data: topAtRisk, isLoading: ltr } = useGetTopAtRiskStudents({ limit: 10 });
   const loading = lk || lt || lr || ltr;
+  const [refreshingRisk, setRefreshingRisk] = useState(false);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const handleRefreshRisk = async () => {
+    setRefreshingRisk(true);
+    try {
+      const token = localStorage.getItem("schoolbox_token");
+      const res = await fetch(`${BASE}/api/risk/run-now`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error();
+      const data = await res.json() as { studentsScored: number; alertsCreated: number };
+      queryClient.invalidateQueries();
+      toast({ title: "Scan de risque terminé", description: `${data.studentsScored} élèves analysés · ${data.alertsCreated} alertes créées` });
+    } catch {
+      toast({ title: "Erreur lors du scan", variant: "destructive" });
+    } finally {
+      setRefreshingRisk(false);
+    }
+  };
 
   const today = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
@@ -266,7 +293,7 @@ export default function AdminDashboard() {
         style={{ backgroundColor: "white", borderRadius: "16px", border: "1px solid #e5e7eb", overflow: "hidden" }}
       >
         {/* Table header — editorial */}
-        <div style={{ padding: "22px 24px 18px", borderBottom: "1px solid #f9fafb", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px" }}>
+        <div style={{ padding: "22px 24px 18px", borderBottom: "1px solid #f9fafb", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", flexWrap: "wrap" }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: "10px" }}>
             <span style={{ fontSize: "28px", fontWeight: 800, color: "#ef4444", fontFamily: "'Sora', sans-serif", lineHeight: 1, letterSpacing: "-0.03em" }}>
               {topAtRisk?.filter(s => (s.tier ?? "low") !== "low").length ?? 0}
@@ -275,15 +302,27 @@ export default function AdminDashboard() {
               students flagged for dropout risk
             </span>
           </div>
-          <Link href="/admin/analytics">
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <button
-              style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: 600, color: "#6b7280", background: "none", border: "1px solid #e5e7eb", padding: "6px 12px", borderRadius: "8px", cursor: "pointer", transition: "all 0.12s" }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = DARK; e.currentTarget.style.color = DARK; }}
+              onClick={handleRefreshRisk}
+              disabled={refreshingRisk}
+              style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: 600, color: refreshingRisk ? "#9ca3af" : "#6b7280", background: "none", border: "1px solid #e5e7eb", padding: "6px 12px", borderRadius: "8px", cursor: refreshingRisk ? "not-allowed" : "pointer", transition: "all 0.12s" }}
+              onMouseEnter={e => { if (!refreshingRisk) { e.currentTarget.style.borderColor = "#10b981"; e.currentTarget.style.color = "#10b981"; }}}
               onMouseLeave={e => { e.currentTarget.style.borderColor = "#e5e7eb"; e.currentTarget.style.color = "#6b7280"; }}
             >
-              Full analytics <ArrowRight style={{ width: "11px", height: "11px" }} />
+              <RefreshCw style={{ width: "11px", height: "11px", animation: refreshingRisk ? "spin 1s linear infinite" : "none" }} />
+              {refreshingRisk ? "Scan en cours…" : "Actualiser scores"}
             </button>
-          </Link>
+            <Link href="/admin/analytics">
+              <button
+                style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: 600, color: "#6b7280", background: "none", border: "1px solid #e5e7eb", padding: "6px 12px", borderRadius: "8px", cursor: "pointer", transition: "all 0.12s" }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = DARK; e.currentTarget.style.color = DARK; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = "#e5e7eb"; e.currentTarget.style.color = "#6b7280"; }}
+              >
+                Full analytics <ArrowRight style={{ width: "11px", height: "11px" }} />
+              </button>
+            </Link>
+          </div>
         </div>
 
         <div style={{ overflowX: "auto" }}>
