@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { useGetMe, getGetMeQueryKey, User, useLogin, useLogout } from "@workspace/api-client-react";
 import { setAuthTokenGetter } from "@workspace/api-client-react/src/custom-fetch";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface LoginCredentials {
   username: string;
@@ -17,6 +18,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient();
   const [token, setToken] = useState<string | null>(() => localStorage.getItem("schoolbox_token"));
 
   useEffect(() => {
@@ -48,6 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       localStorage.removeItem("schoolbox_token");
       setToken(null);
+      queryClient.clear();
     }
   };
 
