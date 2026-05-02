@@ -1,104 +1,395 @@
 import { useState } from "react";
-import { useListUsers, useDeactivateUser } from "@workspace/api-client-react";
+import {
+  useListUsers,
+  useDeactivateUser,
+  useCreateUser,
+  useListClasses,
+  getListUsersQueryKey,
+} from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Plus, MoreHorizontal, UserX, CheckCircle2 } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import {
+  Plus,
+  MoreHorizontal,
+  UserX,
+  CheckCircle2,
+  Users,
+  ShieldCheck,
+  GraduationCap,
+  BookOpen,
+  Eye,
+  EyeOff,
+  Search,
+} from "lucide-react";
+import { motion } from "framer-motion";
+
+const roleConfig = {
+  admin: { label: "Admin", icon: ShieldCheck, color: "bg-violet-100 text-violet-700 border-violet-200" },
+  teacher: { label: "Enseignant", icon: BookOpen, color: "bg-blue-100 text-blue-700 border-blue-200" },
+  student: { label: "Élève", icon: GraduationCap, color: "bg-emerald-100 text-emerald-700 border-emerald-200" },
+};
+
+type Role = "admin" | "teacher" | "student";
+
+const emptyForm = {
+  fullName: "",
+  username: "",
+  password: "",
+  role: "student" as Role,
+  classId: "",
+};
 
 export default function UserManagement() {
-  const { data: users, isLoading } = useListUsers();
-  const deactivateUser = useDeactivateUser();
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState(emptyForm);
+  const [showPwd, setShowPwd] = useState(false);
+  const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
 
-  const handleDeactivate = async (id: number) => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data: users, isLoading } = useListUsers(undefined, {
+    query: { queryKey: getListUsersQueryKey() },
+  });
+  const { data: classes } = useListClasses();
+  const deactivateUser = useDeactivateUser();
+  const createUser = useCreateUser({
+    mutation: {
+      onSuccess: (u) => {
+        queryClient.invalidateQueries({ queryKey: getListUsersQueryKey() });
+        setOpen(false);
+        setForm(emptyForm);
+        toast({ title: "Compte créé", description: `"${u.fullName}" (${u.username}) ajouté.` });
+      },
+      onError: () => toast({ title: "Erreur", description: "Impossible de créer le compte.", variant: "destructive" }),
+    },
+  });
+
+  const handleDeactivate = async (id: number, name: string) => {
     try {
       await deactivateUser.mutateAsync({ id });
-      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-      toast({ title: "User deactivated successfully" });
-    } catch (error) {
-      toast({ title: "Failed to deactivate user", variant: "destructive" });
+      queryClient.invalidateQueries({ queryKey: getListUsersQueryKey() });
+      toast({ title: "Compte désactivé", description: `"${name}" a été désactivé.` });
+    } catch {
+      toast({ title: "Erreur", variant: "destructive" });
     }
   };
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.fullName || !form.username || !form.password || !form.role) return;
+    createUser.mutate({
+      data: {
+        fullName: form.fullName.trim(),
+        username: form.username.trim().toLowerCase(),
+        password: form.password,
+        role: form.role,
+        classId: form.classId ? Number(form.classId) : null,
+      },
+    });
+  };
+
+  const filtered = (users ?? []).filter(u => {
+    const matchSearch =
+      u.fullName.toLowerCase().includes(search.toLowerCase()) ||
+      u.username.toLowerCase().includes(search.toLowerCase());
+    const matchRole = roleFilter === "all" || u.role === roleFilter;
+    return matchSearch && matchRole;
+  });
+
+  const counts = { admin: 0, teacher: 0, student: 0 };
+  (users ?? []).forEach(u => { if (u.role in counts) counts[u.role as Role]++; });
+
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold tracking-tight">User Management</h1>
-        <Button data-testid="button-create-user">
-          <Plus className="mr-2 h-4 w-4" /> Add User
+    <div className="space-y-6 pb-8">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Utilisateurs</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">Gérez les comptes de l'établissement</p>
+        </div>
+        <Button className="gap-2" onClick={() => setOpen(true)} data-testid="button-create-user">
+          <Plus className="h-4 w-4" />
+          Nouvel utilisateur
         </Button>
       </div>
 
-      <Card>
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-3">
+        {(Object.entries(roleConfig) as [Role, typeof roleConfig.admin][]).map(([role, cfg], i) => (
+          <motion.div
+            key={role}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.05 }}
+            className="rounded-2xl border border-border bg-white p-4 flex items-center gap-3 cursor-pointer transition-all"
+            onClick={() => setRoleFilter(roleFilter === role ? "all" : role)}
+            style={{ outline: roleFilter === role ? "2px solid hsl(var(--primary))" : "none", outlineOffset: 2 }}
+          >
+            <div className={`p-2.5 rounded-xl border ${cfg.color} shrink-0`}>
+              <cfg.icon className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="text-xl font-black leading-none">{counts[role]}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{cfg.label}s</p>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Search + Filter */}
+      <div className="flex gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Rechercher par nom ou identifiant..."
+            className="pl-9 rounded-xl"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+        </div>
+        <Select value={roleFilter} onValueChange={setRoleFilter}>
+          <SelectTrigger className="w-40 rounded-xl">
+            <Users className="h-4 w-4 mr-1.5 text-muted-foreground" />
+            <SelectValue placeholder="Tous les rôles" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tous les rôles</SelectItem>
+            <SelectItem value="admin">Admins</SelectItem>
+            <SelectItem value="teacher">Enseignants</SelectItem>
+            <SelectItem value="student">Élèves</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Table */}
+      <Card className="overflow-hidden border border-border shadow-none">
         <CardContent className="p-0">
           {isLoading ? (
-            <div className="p-4 space-y-4">
-              {[1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-12 w-full" />)}
+            <div className="p-4 space-y-3">
+              {[1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left">
-                <thead className="bg-gray-50 text-gray-700 border-b">
-                  <tr>
-                    <th className="px-6 py-4 font-medium">Name</th>
-                    <th className="px-6 py-4 font-medium">Username</th>
-                    <th className="px-6 py-4 font-medium">Role</th>
-                    <th className="px-6 py-4 font-medium">Status</th>
-                    <th className="px-6 py-4 font-medium text-right">Actions</th>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-muted/30">
+                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Nom</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Identifiant</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Rôle</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Statut</th>
+                    <th className="px-5 py-3.5 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wide">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {users?.map((user) => (
-                    <tr key={user.id} className="hover:bg-gray-50/50">
-                      <td className="px-6 py-4 font-medium">{user.fullName}</td>
-                      <td className="px-6 py-4 text-gray-600">{user.username}</td>
-                      <td className="px-6 py-4">
-                        <Badge variant="outline" className="capitalize">{user.role}</Badge>
-                      </td>
-                      <td className="px-6 py-4">
-                        {user.isActive ? (
-                          <span className="flex items-center text-green-600 text-xs font-medium"><CheckCircle2 className="w-3 h-3 mr-1"/> Active</span>
-                        ) : (
-                          <span className="flex items-center text-gray-400 text-xs font-medium"><UserX className="w-3 h-3 mr-1"/> Inactive</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0" data-testid={`button-user-actions-${user.id}`}>
-                              <span className="sr-only">Open menu</span>
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem 
-                              className="text-red-600" 
-                              onClick={() => handleDeactivate(user.id)}
-                              disabled={!user.isActive || deactivateUser.isPending}
-                            >
-                              Deactivate
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                <tbody className="divide-y divide-border">
+                  {filtered.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="px-5 py-12 text-center text-muted-foreground">
+                        Aucun utilisateur trouvé
                       </td>
                     </tr>
-                  ))}
+                  )}
+                  {filtered.map(user => {
+                    const role = user.role as Role;
+                    const cfg = roleConfig[role] ?? roleConfig.student;
+                    const initials = user.fullName.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase();
+                    return (
+                      <tr key={user.id} className="hover:bg-muted/20 transition-colors">
+                        <td className="px-5 py-3.5">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border shrink-0 ${cfg.color}`}>
+                              {initials}
+                            </div>
+                            <span className="font-medium">{user.fullName}</span>
+                          </div>
+                        </td>
+                        <td className="px-5 py-3.5 font-mono text-xs text-muted-foreground">{user.username}</td>
+                        <td className="px-5 py-3.5">
+                          <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold border ${cfg.color}`}>
+                            <cfg.icon className="h-3 w-3" />
+                            {cfg.label}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3.5">
+                          {user.isActive ? (
+                            <span className="flex items-center gap-1.5 text-emerald-600 text-xs font-medium">
+                              <CheckCircle2 className="w-3.5 h-3.5" /> Actif
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1.5 text-muted-foreground text-xs font-medium">
+                              <UserX className="w-3.5 h-3.5" /> Inactif
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-5 py-3.5 text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8" data-testid={`button-user-actions-${user.id}`}>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                className="text-red-600 focus:text-red-600 focus:bg-red-50 gap-2"
+                                onClick={() => handleDeactivate(user.id, user.fullName)}
+                                disabled={!user.isActive || deactivateUser.isPending}
+                              >
+                                <UserX className="h-3.5 w-3.5" />
+                                Désactiver
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
           )}
         </CardContent>
       </Card>
+
+      {/* CREATE dialog */}
+      <Dialog open={open} onOpenChange={v => { setOpen(v); if (!v) setForm(emptyForm); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-primary/10">
+                <Users className="h-4 w-4 text-primary" />
+              </div>
+              Créer un compte
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4 pt-1">
+            <div className="space-y-1.5">
+              <Label htmlFor="fullName" className="text-xs font-semibold">Nom complet *</Label>
+              <Input
+                id="fullName"
+                placeholder="ex: Ahmed Ben Ali"
+                value={form.fullName}
+                onChange={e => setForm(f => ({ ...f, fullName: e.target.value }))}
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="username" className="text-xs font-semibold">Identifiant de connexion *</Label>
+              <Input
+                id="username"
+                placeholder="ex: ahmed.benali"
+                value={form.username}
+                onChange={e => setForm(f => ({ ...f, username: e.target.value.toLowerCase().replace(/\s/g, "") }))}
+                className="font-mono"
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="password" className="text-xs font-semibold">Mot de passe *</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPwd ? "text" : "password"}
+                  placeholder="Minimum 8 caractères"
+                  value={form.password}
+                  onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+                  className="pr-10"
+                  minLength={6}
+                  required
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  onClick={() => setShowPwd(v => !v)}
+                  tabIndex={-1}
+                >
+                  {showPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Rôle *</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {(Object.entries(roleConfig) as [Role, typeof roleConfig.admin][]).map(([role, cfg]) => (
+                  <button
+                    key={role}
+                    type="button"
+                    onClick={() => setForm(f => ({ ...f, role, classId: "" }))}
+                    className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-xs font-semibold ${
+                      form.role === role
+                        ? `border-primary ${cfg.color}`
+                        : "border-border bg-muted/20 text-muted-foreground hover:border-border/80"
+                    }`}
+                  >
+                    <cfg.icon className="h-4 w-4" />
+                    {cfg.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {form.role === "student" && classes && classes.length > 0 && (
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Classe assignée</Label>
+                <Select value={form.classId} onValueChange={v => setForm(f => ({ ...f, classId: v }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choisir une classe (optionnel)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {classes.map(c => (
+                      <SelectItem key={c.id} value={String(c.id)}>
+                        {c.name} — Grade {c.gradeLevel} ({c.academicYear})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div className="flex gap-3 pt-2">
+              <Button type="button" variant="outline" className="flex-1" onClick={() => setOpen(false)}>
+                Annuler
+              </Button>
+              <Button
+                type="submit"
+                className="flex-1 gap-2"
+                disabled={!form.fullName || !form.username || !form.password || createUser.isPending}
+              >
+                {createUser.isPending
+                  ? <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                  : <CheckCircle2 className="h-4 w-4" />
+                }
+                {createUser.isPending ? "Création..." : "Créer le compte"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
