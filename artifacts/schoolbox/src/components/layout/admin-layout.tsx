@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { OfflineBanner } from "@/components/offline-banner";
+import { SidebarLogo, MobileLogoMark } from "@/components/logo";
 
 const navGroups = [
   {
@@ -53,15 +54,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
         className="md:hidden flex items-center justify-between px-4 py-3"
         style={{ backgroundColor: SIDEBAR_BG }}
       >
-        <div className="flex items-center gap-2.5">
-          <div
-            className="w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold"
-            style={{ backgroundColor: "rgba(255,255,255,0.12)", color: "#a7f3d0", fontFamily: "'Sora', sans-serif" }}
-          >
-            SB
-          </div>
-          <span className="text-white font-semibold text-sm" style={{ fontFamily: "'Sora', sans-serif" }}>SchoolBox</span>
-        </div>
+        <MobileLogoMark />
         <Button
           variant="ghost"
           size="icon"
@@ -78,17 +71,8 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
         style={{ backgroundColor: SIDEBAR_BG }}
       >
         {/* Wordmark */}
-        <div className="hidden md:flex items-center gap-3 px-5 py-[22px]" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-          <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0"
-            style={{ backgroundColor: "rgba(255,255,255,0.1)", color: "#a7f3d0", fontFamily: "'Sora', sans-serif", letterSpacing: "-0.02em" }}
-          >
-            SB
-          </div>
-          <div>
-            <p className="text-white font-semibold text-sm leading-tight" style={{ fontFamily: "'Sora', sans-serif" }}>SchoolBox</p>
-            <p style={{ color: "#4d7a62", fontSize: "10px", fontWeight: 600, letterSpacing: "0.06em" }}>ADMIN PORTAL</p>
-          </div>
+        <div className="hidden md:flex items-center px-5 py-[22px]" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          <SidebarLogo portalLabel="Admin Portal" />
         </div>
 
         {/* Nav */}

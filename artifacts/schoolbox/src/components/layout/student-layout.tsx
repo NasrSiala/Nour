@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { LogOut, LayoutDashboard, BookOpen, Clock, Menu, X, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { OfflineBanner } from "@/components/offline-banner";
+import { SidebarLogo, MobileLogoMark } from "@/components/logo";
 
 const navGroups = [
   {
@@ -33,22 +34,15 @@ export function StudentLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col md:flex-row" style={{ backgroundColor: "#f4f4f0" }}>
       <div className="md:hidden flex items-center justify-between px-4 py-3" style={{ backgroundColor: SIDEBAR_BG }}>
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold" style={{ backgroundColor: "rgba(255,255,255,0.12)", color: "#a7f3d0", fontFamily: "'Sora', sans-serif" }}>SB</div>
-          <span className="text-white font-semibold text-sm" style={{ fontFamily: "'Sora', sans-serif" }}>SchoolBox</span>
-        </div>
+        <MobileLogoMark />
         <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="text-white hover:bg-white/10">
           {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </Button>
       </div>
 
       <div className={`${isMobileMenuOpen ? "flex" : "hidden"} md:flex flex-col w-full md:w-56 flex-shrink-0`} style={{ backgroundColor: SIDEBAR_BG }}>
-        <div className="hidden md:flex items-center gap-3 px-5 py-[22px]" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0" style={{ backgroundColor: "rgba(255,255,255,0.1)", color: "#a7f3d0", fontFamily: "'Sora', sans-serif" }}>SB</div>
-          <div>
-            <p className="text-white font-semibold text-sm" style={{ fontFamily: "'Sora', sans-serif" }}>SchoolBox</p>
-            <p style={{ color: "#4d7a62", fontSize: "10px", fontWeight: 600, letterSpacing: "0.06em" }}>STUDENT PORTAL</p>
-          </div>
+        <div className="hidden md:flex items-center px-5 py-[22px]" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          <SidebarLogo portalLabel="Student Portal" />
         </div>
 
         <nav className="flex-1 overflow-y-auto py-4 px-2.5" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>

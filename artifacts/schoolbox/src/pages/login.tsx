@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, WifiOff } from "lucide-react";
 import { motion } from "framer-motion";
+import { LoginLogo } from "@/components/logo";
 
 const DEMO = [
   { role: "Admin", user: "admin", pass: "admin123" },
@@ -68,16 +69,7 @@ export default function Login() {
           transition={{ duration: 0.7 }}
           className="relative z-10 flex items-center gap-3"
         >
-          <div
-            className="w-9 h-9 rounded-lg flex items-center justify-center text-sm font-bold tracking-tight"
-            style={{ backgroundColor: "#1f7a4a", color: "#a7f3d0", fontFamily: "'Sora', sans-serif" }}
-          >
-            SB
-          </div>
-          <div>
-            <p className="text-white font-semibold text-base tracking-tight" style={{ fontFamily: "'Sora', sans-serif" }}>SchoolBox</p>
-            <p style={{ color: "#6ee7a8", fontSize: "11px", letterSpacing: "0.08em", fontWeight: 500 }}>OFFLINE PLATFORM</p>
-          </div>
+          <LoginLogo />
         </motion.div>
 
         {/* Main editorial text */}
