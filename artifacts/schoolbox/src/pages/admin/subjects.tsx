@@ -3,6 +3,8 @@ import {
   useListSubjects,
   useCreateSubject,
   getListSubjectsQueryKey,
+  useListUsers,
+  getListUsersQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
@@ -57,6 +59,7 @@ import {
   ToggleRight,
   ArrowUpDown,
   Keyboard,
+  UserCheck,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -79,6 +82,8 @@ type Subject = {
   name: string;
   gradeLevel: number;
   description?: string | null;
+  teacherId?: number | null;
+  teacherName?: string | null;
   isActive: boolean;
   lessonCount: number;
   createdAt: string;
@@ -86,7 +91,7 @@ type Subject = {
 
 type SortKey = "name" | "grade" | "lessons" | "created";
 
-const emptyForm = { code: "", name: "", gradeLevel: "", description: "" };
+const emptyForm = { code: "", name: "", gradeLevel: "", description: "", teacherId: "" };
 
 function SubjectFormFields({
   form,
@@ -95,6 +100,11 @@ function SubjectFormFields({
   form: typeof emptyForm;
   setForm: React.Dispatch<React.SetStateAction<typeof emptyForm>>;
 }) {
+  const { data: teachers } = useListUsers(
+    { role: "teacher" },
+    { query: { queryKey: [...getListUsersQueryKey({ role: "teacher" })] } }
+  );
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
@@ -145,6 +155,29 @@ function SubjectFormFields({
           onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
           required
         />
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="teacher" className="flex items-center gap-1.5 text-xs font-semibold">
+          <UserCheck className="h-3.5 w-3.5 text-muted-foreground" />
+          Enseignant responsable
+          <span className="text-muted-foreground font-normal">(optionnel)</span>
+        </Label>
+        <Select
+          value={form.teacherId}
+          onValueChange={v => setForm(f => ({ ...f, teacherId: v === "none" ? "" : v }))}
+        >
+          <SelectTrigger id="teacher">
+            <SelectValue placeholder="Choisir un enseignant…" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">— Aucun enseignant —</SelectItem>
+            {(teachers ?? []).map(t => (
+              <SelectItem key={t.id} value={String(t.id)}>
+                {t.fullName}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="description" className="flex items-center gap-1.5 text-xs font-semibold">
@@ -216,6 +249,7 @@ export default function AdminSubjects() {
       name: s.name,
       gradeLevel: String(s.gradeLevel),
       description: s.description ?? "",
+      teacherId: s.teacherId ? String(s.teacherId) : "",
     });
   }, []);
 
@@ -228,6 +262,7 @@ export default function AdminSubjects() {
         name: createForm.name.trim(),
         gradeLevel: Number(createForm.gradeLevel),
         description: createForm.description.trim() || null,
+        teacherId: createForm.teacherId ? Number(createForm.teacherId) : null,
       },
     });
   };
@@ -246,6 +281,7 @@ export default function AdminSubjects() {
           name: editForm.name.trim(),
           gradeLevel: Number(editForm.gradeLevel),
           description: editForm.description.trim() || null,
+          teacherId: editForm.teacherId ? Number(editForm.teacherId) : null,
         }),
       });
       if (!res.ok) throw new Error();
@@ -492,6 +528,16 @@ export default function AdminSubjects() {
                         <p className="text-[12px] text-muted-foreground mt-2.5 line-clamp-2 leading-relaxed">
                           {subject.description}
                         </p>
+                      )}
+
+                      {/* Teacher tag */}
+                      {subject.teacherName ? (
+                        <div className="flex items-center gap-1.5 mt-2.5">
+                          <UserCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                          <p className="text-[11px] text-emerald-700 font-medium truncate">{subject.teacherName}</p>
+                        </div>
+                      ) : (
+                        <p className="text-[11px] text-muted-foreground/50 mt-2 italic">Aucun enseignant</p>
                       )}
 
                       {/* Footer — lesson count right-aligned */}

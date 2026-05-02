@@ -1,26 +1,44 @@
 import { useState } from "react";
-import { useListClasses, useCreateClass, getListClassesQueryKey } from "@workspace/api-client-react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import {
+  useListClasses,
+  useCreateClass,
+  getListClassesQueryKey,
+  useListUsers,
+  getListUsersQueryKey,
+} from "@workspace/api-client-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { Plus, Users, GraduationCap } from "lucide-react";
+import { Plus, Users, GraduationCap, UserCheck } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface ClassFormData { name: string; gradeLevel: number; academicYear: string; }
 
 export default function AdminClasses() {
   const [open, setOpen] = useState(false);
+  const [teacherId, setTeacherId] = useState<string>("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const { data: classes, isLoading } = useListClasses({ query: { queryKey: getListClassesQueryKey() } });
+  const { data: teachers } = useListUsers(
+    { role: "teacher" },
+    { query: { queryKey: [...getListUsersQueryKey({ role: "teacher" })] } }
+  );
   const createClass = useCreateClass();
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<ClassFormData>({
@@ -29,10 +47,17 @@ export default function AdminClasses() {
 
   const onSubmit = async (data: ClassFormData) => {
     try {
-      await createClass.mutateAsync({ data: { ...data, gradeLevel: Number(data.gradeLevel) } });
+      await createClass.mutateAsync({
+        data: {
+          ...data,
+          gradeLevel: Number(data.gradeLevel),
+          homeroomTeacherId: teacherId ? Number(teacherId) : null,
+        }
+      });
       queryClient.invalidateQueries({ queryKey: getListClassesQueryKey() });
       toast({ title: "Classe créée avec succès" });
       reset();
+      setTeacherId("");
       setOpen(false);
     } catch {
       toast({ title: "Erreur lors de la création", variant: "destructive" });
@@ -86,8 +111,13 @@ export default function AdminClasses() {
                         <span className="font-bold text-lg">{cls.studentCount}</span>
                         <span className="text-muted-foreground text-xs">élèves</span>
                       </div>
-                      {cls.teacherName && (
-                        <p className="text-xs text-muted-foreground mt-2 truncate">Titulaire : {cls.teacherName}</p>
+                      {cls.teacherName ? (
+                        <div className="flex items-center gap-1.5 mt-2">
+                          <UserCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                          <p className="text-xs text-emerald-700 font-medium truncate">{cls.teacherName}</p>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted-foreground/60 mt-2 italic">Aucun titulaire</p>
                       )}
                     </CardContent>
                   </Card>
@@ -98,7 +128,7 @@ export default function AdminClasses() {
         ))
       )}
 
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { reset(); setTeacherId(""); } }}>
         <DialogContent>
           <DialogHeader><DialogTitle>Créer une nouvelle classe</DialogTitle></DialogHeader>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -107,13 +137,35 @@ export default function AdminClasses() {
               <Input {...register("name", { required: true })} placeholder="Ex: 3ème A" data-testid="input-class-name" />
               {errors.name && <p className="text-xs text-destructive">Requis</p>}
             </div>
-            <div className="space-y-1.5">
-              <Label>Niveau (grade)</Label>
-              <Input type="number" {...register("gradeLevel", { required: true, min: 1, max: 12 })} placeholder="3" data-testid="input-grade-level" />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Niveau (grade)</Label>
+                <Input type="number" {...register("gradeLevel", { required: true, min: 1, max: 12 })} placeholder="3" data-testid="input-grade-level" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Année scolaire</Label>
+                <Input {...register("academicYear", { required: true })} placeholder="2025-2026" data-testid="input-academic-year" />
+              </div>
             </div>
             <div className="space-y-1.5">
-              <Label>Année scolaire</Label>
-              <Input {...register("academicYear", { required: true })} placeholder="2025-2026" data-testid="input-academic-year" />
+              <Label className="flex items-center gap-1.5 text-xs font-semibold">
+                <UserCheck className="h-3.5 w-3.5 text-muted-foreground" />
+                Enseignant titulaire
+                <span className="text-muted-foreground font-normal">(optionnel)</span>
+              </Label>
+              <Select value={teacherId} onValueChange={setTeacherId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choisir un enseignant…" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— Aucun titulaire —</SelectItem>
+                  {(teachers ?? []).map(t => (
+                    <SelectItem key={t.id} value={String(t.id)}>
+                      {t.fullName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>Annuler</Button>

@@ -386,6 +386,8 @@ export const ListSubjectsResponseItem = zod.object({
   name: zod.string(),
   gradeLevel: zod.number(),
   description: zod.string().nullish(),
+  teacherId: zod.number().nullish(),
+  teacherName: zod.string().nullish(),
   isActive: zod.boolean(),
   lessonCount: zod.number(),
   createdAt: zod.string(),
@@ -400,6 +402,7 @@ export const CreateSubjectBody = zod.object({
   name: zod.string(),
   gradeLevel: zod.number(),
   description: zod.string().nullish(),
+  teacherId: zod.number().nullish(),
 });
 
 /**
@@ -415,6 +418,8 @@ export const GetSubjectResponse = zod.object({
   name: zod.string(),
   gradeLevel: zod.number(),
   description: zod.string().nullish(),
+  teacherId: zod.number().nullish(),
+  teacherName: zod.string().nullish(),
   isActive: zod.boolean(),
   lessonCount: zod.number(),
   createdAt: zod.string(),

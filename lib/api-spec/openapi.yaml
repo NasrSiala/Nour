@@ -1173,6 +1173,10 @@ components:
           type: integer
         description:
           type: ["string", "null"]
+        teacherId:
+          type: ["integer", "null"]
+        teacherName:
+          type: ["string", "null"]
         isActive:
           type: boolean
         lessonCount:
@@ -1199,6 +1203,8 @@ components:
           type: integer
         description:
           type: ["string", "null"]
+        teacherId:
+          type: ["integer", "null"]
       required:
         - code
         - name

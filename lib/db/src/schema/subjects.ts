@@ -8,6 +8,7 @@ export const subjectsTable = pgTable("subjects", {
   name: text("name").notNull(),
   gradeLevel: integer("grade_level").notNull(),
   description: text("description"),
+  teacherId: integer("teacher_id"),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),

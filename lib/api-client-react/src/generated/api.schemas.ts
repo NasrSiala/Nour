@@ -219,6 +219,10 @@ export interface Subject {
   gradeLevel: number;
   /** @nullable */
   description?: string | null;
+  /** @nullable */
+  teacherId?: number | null;
+  /** @nullable */
+  teacherName?: string | null;
   isActive: boolean;
   lessonCount: number;
   createdAt: string;
@@ -230,6 +234,8 @@ export interface CreateSubjectBody {
   gradeLevel: number;
   /** @nullable */
   description?: string | null;
+  /** @nullable */
+  teacherId?: number | null;
 }
 
 /**
