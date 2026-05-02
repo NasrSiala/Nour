@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import { LogOut, LayoutDashboard, ClipboardCheck, AlertTriangle, Users, Menu, X } from "lucide-react";
+import { LogOut, LayoutDashboard, ClipboardCheck, AlertTriangle, Users, BookOpen, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { OfflineBanner } from "@/components/offline-banner";
 
 export function TeacherLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
@@ -14,6 +15,7 @@ export function TeacherLayout({ children }: { children: React.ReactNode }) {
     { name: "Attendance", href: "/teacher/attendance", icon: ClipboardCheck },
     { name: "Risk Alerts", href: "/teacher/risk", icon: AlertTriangle },
     { name: "My Classes", href: "/teacher/classes", icon: Users },
+    { name: "Content", href: "/teacher/content", icon: BookOpen },
   ];
 
   return (
@@ -55,8 +57,9 @@ export function TeacherLayout({ children }: { children: React.ReactNode }) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto">
-        <main className="p-4 md:p-8 max-w-7xl mx-auto">
+      <div className="flex-1 overflow-auto flex flex-col">
+        <OfflineBanner role="teacher" />
+        <main className="flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full">
           {children}
         </main>
       </div>

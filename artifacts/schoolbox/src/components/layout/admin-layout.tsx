@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { LogOut, LayoutDashboard, Users, GraduationCap, BarChart2, Bell, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { OfflineBanner } from "@/components/offline-banner";
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
@@ -59,8 +60,9 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-auto">
-        <main className="p-4 md:p-8 max-w-7xl mx-auto">
+      <div className="flex-1 overflow-auto flex flex-col">
+        <OfflineBanner role="admin" />
+        <main className="flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full">
           {children}
         </main>
       </div>

@@ -18,6 +18,7 @@ import TeacherDashboard from "@/pages/teacher/index";
 import TeacherAttendance from "@/pages/teacher/attendance";
 import TeacherRisk from "@/pages/teacher/risk";
 import TeacherClasses from "@/pages/teacher/classes";
+import TeacherContent from "@/pages/teacher/content";
 import { TeacherLayout } from "@/components/layout/teacher-layout";
 
 import StudentDashboard from "@/pages/student/index";
@@ -115,6 +116,9 @@ function Router() {
       </Route>
       <Route path="/teacher/classes">
         <ProtectedRoute component={TeacherClasses} layout={TeacherLayout} allowedRoles={["teacher"]} />
+      </Route>
+      <Route path="/teacher/content">
+        <ProtectedRoute component={TeacherContent} layout={TeacherLayout} allowedRoles={["teacher"]} />
       </Route>
 
       <Route path="/student">
