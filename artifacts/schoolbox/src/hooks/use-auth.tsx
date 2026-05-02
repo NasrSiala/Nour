@@ -8,14 +8,24 @@ interface LoginCredentials {
   password: string;
 }
 
+interface RegisterCredentials {
+  username: string;
+  password: string;
+  fullName: string;
+  role: "teacher" | "student";
+}
+
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   login: (credentials: LoginCredentials) => Promise<void>;
+  register: (credentials: RegisterCredentials) => Promise<void>;
   logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
+
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
@@ -44,6 +54,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await refetch();
   };
 
+  const handleRegister = async (credentials: RegisterCredentials) => {
+    const res = await fetch(`${BASE}/api/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(credentials),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error ?? "Registration failed");
+    }
+    const data = await res.json();
+    localStorage.setItem("schoolbox_token", data.token);
+    setToken(data.token);
+    await refetch();
+  };
+
   const handleLogout = async () => {
     try {
       await logoutMutation.mutateAsync();
@@ -55,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user: user ?? null, isLoading, login: handleLogin, logout: handleLogout }}>
+    <AuthContext.Provider value={{ user: user ?? null, isLoading, login: handleLogin, register: handleRegister, logout: handleLogout }}>
       {children}
     </AuthContext.Provider>
   );

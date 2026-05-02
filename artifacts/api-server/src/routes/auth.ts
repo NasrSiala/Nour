@@ -48,6 +48,53 @@ router.post("/auth/login", async (req, res): Promise<void> => {
   });
 });
 
+router.post("/auth/register", async (req, res): Promise<void> => {
+  const { username, password, fullName, role } = req.body ?? {};
+
+  if (typeof username !== "string" || username.length < 3 || username.length > 40) {
+    res.status(400).json({ error: "Username must be 3–40 characters" });
+    return;
+  }
+  if (typeof password !== "string" || password.length < 6) {
+    res.status(400).json({ error: "Password must be at least 6 characters" });
+    return;
+  }
+  if (typeof fullName !== "string" || fullName.length < 2 || fullName.length > 120) {
+    res.status(400).json({ error: "Full name must be 2–120 characters" });
+    return;
+  }
+  if (role !== "teacher" && role !== "student") {
+    res.status(400).json({ error: "Role must be 'teacher' or 'student'" });
+    return;
+  }
+
+  const [existing] = await db.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.username, username));
+  if (existing) {
+    res.status(409).json({ error: "Username already taken" });
+    return;
+  }
+
+  const hashedPassword = hashPassword(password);
+  const [user] = await db.insert(usersTable).values({ username, fullName, hashedPassword, role }).returning();
+
+  const token = generateToken(user.id, user.role);
+  req.log.info({ userId: user.id, role: user.role }, "User registered");
+
+  res.status(201).json({
+    token,
+    user: {
+      id: user.id,
+      username: user.username,
+      fullName: user.fullName,
+      role: user.role,
+      classId: user.classId,
+      isActive: user.isActive,
+      lastLogin: null,
+      createdAt: user.createdAt.toISOString(),
+    },
+  });
+});
+
 router.post("/auth/logout", (_req, res): Promise<void> => {
   res.json({ message: "Logged out successfully" });
   return Promise.resolve();

@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 
 import Login from "@/pages/login";
+import Signup from "@/pages/signup";
 import NotFound from "@/pages/not-found";
 
 import AdminDashboard from "@/pages/admin/dashboard";
@@ -87,6 +88,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/login" component={Login} />
+      <Route path="/signup" component={Signup} />
       <Route path="/" component={HomeRedirect} />
 
       <Route path="/admin">
