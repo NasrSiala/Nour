@@ -7,42 +7,31 @@ import {
   getGetStudentAttendanceSummaryQueryKey,
   getListStudentsQueryKey,
 } from "@workspace/api-client-react";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
-import {
-  BookOpen,
-  CalendarCheck,
-  ChevronRight,
-  TrendingUp,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  Shield,
-  GraduationCap,
-  Sparkles,
-} from "lucide-react";
+import { ArrowRight, BookOpen } from "lucide-react";
 import { motion } from "framer-motion";
 
-const subjectGradients = [
-  "from-emerald-500 to-teal-600",
-  "from-blue-500 to-indigo-600",
-  "from-violet-500 to-purple-600",
-  "from-orange-500 to-amber-600",
-  "from-pink-500 to-rose-600",
-  "from-cyan-500 to-sky-600",
-];
+const DARK = "#0B2819";
 
-const attendanceStatConfig = [
-  { key: "present" as const, label: "Présent", icon: CheckCircle2, color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200" },
-  { key: "absent" as const, label: "Absent", icon: XCircle, color: "text-red-600", bg: "bg-red-50", border: "border-red-200" },
-  { key: "late" as const, label: "Retard", icon: Clock, color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-200" },
-  { key: "excused" as const, label: "Excusé", icon: Shield, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-200" },
-];
+const subjectAccents = ["#10b981","#3b82f6","#8b5cf6","#f59e0b","#ef4444","#06b6d4"];
+
+function attendanceColor(rate: number) {
+  if (rate >= 85) return "#10b981";
+  if (rate >= 70) return "#f59e0b";
+  return "#ef4444";
+}
+
+function attendanceLabel(rate: number) {
+  if (rate >= 90) return "Excellent";
+  if (rate >= 80) return "Good";
+  if (rate >= 70) return "Needs attention";
+  return "At risk";
+}
 
 export default function StudentDashboard() {
   const { user } = useAuth();
+  const todayLabel = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
 
   const { data: students } = useListStudents({}, { query: { queryKey: getListStudentsQueryKey({}) } });
   const studentRecord = students?.find(
@@ -61,177 +50,200 @@ export default function StudentDashboard() {
     { query: { enabled: !!studentId, queryKey: getGetStudentAttendanceSummaryQueryKey(studentId ?? 0, {}) } }
   );
 
-  const classSubjects = subjects ?? [];
+  const classSubjects = (subjects ?? []).slice(0, 6);
   const rate = summary?.attendanceRatePct ?? 0;
-  const rateColor = rate >= 85 ? "text-emerald-600" : rate >= 70 ? "text-amber-600" : "text-red-600";
-  const rateBg = rate >= 85 ? "from-emerald-500 to-teal-600" : rate >= 70 ? "from-amber-500 to-orange-600" : "from-red-500 to-rose-600";
+  const rateColor = attendanceColor(rate);
 
-  const initials = user?.fullName
-    ?.split(" ")
-    .map((n: string) => n[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase() ?? "??";
+  const firstName = user?.fullName?.split(" ")[0] ?? "there";
 
   return (
-    <div className="space-y-6 pb-8">
-      {/* Welcome hero */}
+    <div style={{ display: "flex", flexDirection: "column", gap: "28px", paddingBottom: "40px" }}>
+
+      {/* ── Page header ── */}
       <motion.div
-        initial={{ opacity: 0, y: -12 }}
+        initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0a3d25] via-[#0f5535] to-[#1a7a52] p-7 text-white shadow-xl"
+        style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: "16px", flexWrap: "wrap" }}
       >
-        <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full bg-white/5 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-8 -left-8 w-36 h-36 rounded-full bg-white/5 blur-3xl pointer-events-none" />
-        <div className="relative flex items-center gap-5">
-          <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center shrink-0">
-            <span className="text-xl font-bold">{initials}</span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <Sparkles className="h-4 w-4 text-yellow-300" />
-              <span className="text-white/70 text-sm">Bienvenue de retour</span>
-            </div>
-            <h1 className="text-2xl font-bold truncate">{user?.fullName}</h1>
-            <p className="text-white/60 text-sm mt-0.5 flex items-center gap-1.5">
-              <GraduationCap className="h-3.5 w-3.5" />
-              Élève · Espace personnel
-            </p>
-          </div>
-          {summary && (
-            <div className="shrink-0 text-center">
-              <div className={`text-3xl font-black ${rate >= 85 ? "text-emerald-300" : rate >= 70 ? "text-amber-300" : "text-red-300"}`}>
-                {rate}%
-              </div>
-              <p className="text-white/60 text-xs">Présence</p>
-            </div>
-          )}
+        <div>
+          <h1 style={{ fontSize: "22px", fontWeight: 800, letterSpacing: "-0.02em", color: "#111827", fontFamily: "'Sora', sans-serif", lineHeight: 1.1 }}>
+            Bonjour, {firstName}.
+          </h1>
+          <p style={{ fontSize: "13px", color: "#9ca3af", marginTop: "5px" }}>{todayLabel}</p>
+        </div>
+        <div style={{ display: "flex", gap: "8px" }}>
+          {[
+            { label: "My subjects", href: "/student/subjects" },
+            { label: "Attendance record", href: "/student/attendance" },
+          ].map(a => (
+            <Link key={a.href} href={a.href}>
+              <button
+                style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "6px 12px", borderRadius: "20px", border: "1px solid #e5e7eb", background: "white", fontSize: "12px", fontWeight: 600, color: "#374151", cursor: "pointer", transition: "all 0.12s" }}
+                onMouseEnter={e => { const b = e.currentTarget; b.style.borderColor = DARK; b.style.backgroundColor = DARK; b.style.color = "white"; }}
+                onMouseLeave={e => { const b = e.currentTarget; b.style.borderColor = "#e5e7eb"; b.style.backgroundColor = "white"; b.style.color = "#374151"; }}
+              >
+                {a.label}
+              </button>
+            </Link>
+          ))}
         </div>
       </motion.div>
 
-      {/* Attendance card */}
+      {/* ── Attendance billboard ── */}
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="rounded-2xl border border-border bg-white overflow-hidden shadow-sm"
+        transition={{ delay: 0.05 }}
+        style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr 1fr 1fr", borderRadius: "16px", overflow: "hidden", border: "1px solid #e5e7eb" }}
       >
-        <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="p-1.5 rounded-lg bg-primary/10">
-              <CalendarCheck className="h-4 w-4 text-primary" />
-            </div>
-            <h2 className="font-semibold text-sm">Mes présences</h2>
-          </div>
-          <Link href="/student/attendance">
-            <Button variant="ghost" size="sm" className="text-xs gap-1 text-primary">
-              Voir détails
-              <ChevronRight className="h-3 w-3" />
-            </Button>
-          </Link>
-        </div>
-        <div className="p-5">
+        {/* Featured — Overall rate */}
+        <div style={{ backgroundColor: DARK, padding: "26px 26px 22px", position: "relative", overflow: "hidden" }}>
+          <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)", backgroundSize: "20px 20px", pointerEvents: "none" }} />
+          <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", color: "#4d7a62", textTransform: "uppercase", position: "relative" }}>
+            Attendance Rate
+          </p>
           {loadingSummary || !studentId ? (
-            <div className="grid grid-cols-4 gap-3">
-              {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-20 rounded-xl" />)}
-            </div>
+            <Skeleton className="h-12 w-28 mt-2 rounded-lg" style={{ background: "rgba(255,255,255,0.1)" }} />
           ) : (
             <>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {attendanceStatConfig.map((cfg, i) => {
-                  const StatIcon = cfg.icon;
-                  const val = summary?.[cfg.key] ?? 0;
-                  return (
-                    <motion.div
-                      key={cfg.key}
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: i * 0.06 }}
-                      className={`rounded-xl p-3 border ${cfg.bg} ${cfg.border} text-center`}
-                    >
-                      <StatIcon className={`h-5 w-5 mx-auto mb-1 ${cfg.color}`} />
-                      <p className={`text-2xl font-black ${cfg.color}`}>{val}</p>
-                      <p className={`text-xs font-medium mt-0.5 ${cfg.color} opacity-80`}>{cfg.label}</p>
-                    </motion.div>
-                  );
-                })}
-              </div>
-
-              {summary && (
-                <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">Taux de présence global</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="h-2 w-24 rounded-full bg-muted overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${rate}%` }}
-                        transition={{ delay: 0.4, duration: 0.8, ease: "easeOut" }}
-                        className={`h-full rounded-full bg-gradient-to-r ${rateBg}`}
-                      />
-                    </div>
-                    <span className={`text-sm font-bold ${rateColor}`}>{rate}%</span>
-                  </div>
-                </div>
-              )}
+              <p style={{ fontSize: "52px", fontWeight: 800, fontFamily: "'Sora', sans-serif", lineHeight: 1, marginTop: "8px", position: "relative", letterSpacing: "-0.03em", color: rateColor }}>
+                {rate}<span style={{ fontSize: "24px", color: "#4d7a62", marginLeft: "1px" }}>%</span>
+              </p>
+              <p style={{ fontSize: "11px", fontWeight: 700, color: "#4d7a62", marginTop: "10px", position: "relative", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+                {attendanceLabel(rate)}
+              </p>
             </>
           )}
+          <Link href="/student/attendance">
+            <button style={{ display: "inline-flex", alignItems: "center", gap: "6px", marginTop: "14px", fontSize: "12px", fontWeight: 600, color: "#4ade80", background: "none", border: "none", cursor: "pointer", padding: 0, position: "relative" }}>
+              Full record <ArrowRight style={{ width: "11px", height: "11px" }} />
+            </button>
+          </Link>
+        </div>
+
+        {/* Present */}
+        <div style={{ padding: "26px 18px 22px", backgroundColor: "white", borderLeft: "1px solid #f3f4f6" }}>
+          <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", color: "#9ca3af", textTransform: "uppercase" }}>Present</p>
+          {loadingSummary || !studentId ? (
+            <Skeleton className="h-10 w-12 mt-3 rounded-lg" />
+          ) : (
+            <p style={{ fontSize: "40px", fontWeight: 800, color: "#10b981", fontFamily: "'Sora', sans-serif", lineHeight: 1, marginTop: "10px", letterSpacing: "-0.03em" }}>
+              {summary?.present ?? 0}
+            </p>
+          )}
+          <p style={{ fontSize: "11px", color: "#d1d5db", marginTop: "8px" }}>days</p>
+        </div>
+
+        {/* Absent */}
+        <div style={{ padding: "26px 18px 22px", backgroundColor: "white", borderLeft: "1px solid #f3f4f6" }}>
+          <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", color: "#9ca3af", textTransform: "uppercase" }}>Absent</p>
+          {loadingSummary || !studentId ? (
+            <Skeleton className="h-10 w-12 mt-3 rounded-lg" />
+          ) : (
+            <p style={{ fontSize: "40px", fontWeight: 800, color: (summary?.absent ?? 0) > 5 ? "#ef4444" : "#374151", fontFamily: "'Sora', sans-serif", lineHeight: 1, marginTop: "10px", letterSpacing: "-0.03em" }}>
+              {summary?.absent ?? 0}
+            </p>
+          )}
+          <p style={{ fontSize: "11px", color: "#d1d5db", marginTop: "8px" }}>days</p>
+        </div>
+
+        {/* Late */}
+        <div style={{ padding: "26px 18px 22px", backgroundColor: "white", borderLeft: "1px solid #f3f4f6" }}>
+          <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", color: "#9ca3af", textTransform: "uppercase" }}>Late</p>
+          {loadingSummary || !studentId ? (
+            <Skeleton className="h-10 w-12 mt-3 rounded-lg" />
+          ) : (
+            <p style={{ fontSize: "40px", fontWeight: 800, color: (summary?.late ?? 0) > 3 ? "#f59e0b" : "#374151", fontFamily: "'Sora', sans-serif", lineHeight: 1, marginTop: "10px", letterSpacing: "-0.03em" }}>
+              {summary?.late ?? 0}
+            </p>
+          )}
+          <p style={{ fontSize: "11px", color: "#d1d5db", marginTop: "8px" }}>days</p>
+        </div>
+
+        {/* Excused */}
+        <div style={{ padding: "26px 18px 22px", backgroundColor: "white", borderLeft: "1px solid #f3f4f6" }}>
+          <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", color: "#9ca3af", textTransform: "uppercase" }}>Excused</p>
+          {loadingSummary || !studentId ? (
+            <Skeleton className="h-10 w-12 mt-3 rounded-lg" />
+          ) : (
+            <p style={{ fontSize: "40px", fontWeight: 800, color: "#374151", fontFamily: "'Sora', sans-serif", lineHeight: 1, marginTop: "10px", letterSpacing: "-0.03em" }}>
+              {summary?.excused ?? 0}
+            </p>
+          )}
+          <p style={{ fontSize: "11px", color: "#d1d5db", marginTop: "8px" }}>days</p>
         </div>
       </motion.div>
 
-      {/* Subjects section */}
+      {/* ── Subjects ── */}
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.18 }}
+        transition={{ delay: 0.12 }}
+        style={{ backgroundColor: "white", borderRadius: "16px", border: "1px solid #e5e7eb", overflow: "hidden" }}
       >
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2.5">
-            <div className="p-1.5 rounded-lg bg-primary/10">
-              <BookOpen className="h-4 w-4 text-primary" />
-            </div>
-            <h2 className="font-semibold text-sm">Mes matières</h2>
-          </div>
+        <div style={{ padding: "20px 22px 16px", borderBottom: "1px solid #f9fafb", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <p style={{ fontSize: "14px", fontWeight: 700, color: "#111827", fontFamily: "'Sora', sans-serif" }}>My Subjects</p>
           <Link href="/student/subjects">
-            <Button variant="ghost" size="sm" className="text-xs gap-1 text-primary">
-              Voir tout
-              <ChevronRight className="h-3 w-3" />
-            </Button>
+            <button
+              style={{ fontSize: "11px", fontWeight: 600, color: "#9ca3af", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
+              onMouseEnter={e => (e.currentTarget.style.color = DARK)}
+              onMouseLeave={e => (e.currentTarget.style.color = "#9ca3af")}
+            >
+              All subjects <ArrowRight style={{ width: "10px", height: "10px" }} />
+            </button>
           </Link>
         </div>
 
         {loadingSubjects ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-24 rounded-2xl" />)}
+          <div style={{ padding: "16px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+            {[1,2,3,4].map(i => <Skeleton key={i} className="h-16 rounded-xl" />)}
+          </div>
+        ) : classSubjects.length === 0 ? (
+          <div style={{ padding: "40px", textAlign: "center", color: "#d1d5db", fontSize: "13px" }}>
+            No subjects assigned yet
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {classSubjects.slice(0, 6).map((subject, i) => {
-              const grad = subjectGradients[subject.id % subjectGradients.length];
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0" }}>
+            {classSubjects.map((subject, i) => {
+              const accent = subjectAccents[i % subjectAccents.length];
+              const isLast = i >= classSubjects.length - 2;
               return (
                 <motion.div
                   key={subject.id}
-                  initial={{ opacity: 0, y: 8 }}
+                  initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 + i * 0.05 }}
+                  transition={{ delay: 0.16 + i * 0.04 }}
                 >
                   <Link href={`/student/subjects/${subject.id}`}>
-                    <div className="group flex items-center gap-4 p-4 rounded-2xl border border-border bg-white hover:shadow-md hover:border-primary/20 transition-all cursor-pointer overflow-hidden relative">
-                      <div className={`absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b ${grad}`} />
-                      <div className={`p-2.5 rounded-xl bg-gradient-to-br ${grad} shadow-sm shrink-0`}>
-                        <BookOpen className="h-4 w-4 text-white" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm truncate group-hover:text-primary transition-colors">
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "14px",
+                        padding: "16px 22px",
+                        borderBottom: isLast ? "none" : "1px solid #f9fafb",
+                        borderRight: i % 2 === 0 ? "1px solid #f9fafb" : "none",
+                        cursor: "pointer",
+                        transition: "background 0.12s",
+                        borderLeft: `3px solid ${accent}`,
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = "#fafafa")}
+                      onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
+                    >
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: "13px", fontWeight: 600, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {subject.name}
                         </p>
-                        <p className="text-xs text-muted-foreground mt-0.5">{subject.code}</p>
+                        <p style={{ fontSize: "11px", color: "#9ca3af", marginTop: "2px", fontFamily: "monospace" }}>
+                          {subject.code}
+                        </p>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <Badge variant="secondary" className="text-xs">{subject.lessonCount}</Badge>
-                        <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          <BookOpen style={{ width: "11px", height: "11px", color: "#d1d5db" }} />
+                          <span style={{ fontSize: "11px", fontWeight: 600, color: "#9ca3af" }}>{subject.lessonCount}</span>
+                        </div>
+                        <ArrowRight style={{ width: "11px", height: "11px", color: "#d1d5db" }} />
                       </div>
                     </div>
                   </Link>
@@ -241,6 +253,7 @@ export default function StudentDashboard() {
           </div>
         )}
       </motion.div>
+
     </div>
   );
 }
