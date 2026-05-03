@@ -6,26 +6,28 @@ import { Button } from "@/components/ui/button";
 import { OfflineBanner } from "@/components/offline-banner";
 import { SidebarLogo, MobileLogoMark } from "@/components/logo";
 import { NetworkStatusPill } from "@/components/network-status-pill";
-
-const navGroups = [
-  {
-    label: "My Learning",
-    items: [
-      { name: "Dashboard", href: "/student", icon: LayoutDashboard },
-      { name: "Subjects", href: "/student/subjects", icon: BookOpen },
-      { name: "Attendance", href: "/student/attendance", icon: Clock },
-    ],
-  },
-];
+import { useTranslation } from "react-i18next";
 
 const SIDEBAR_BG = "#0B2819";
-const SIDEBAR_ACTIVE_BG = "rgba(255,255,255,0.08)";
-const SIDEBAR_HOVER_BG = "rgba(255,255,255,0.04)";
+const SIDEBAR_ACTIVE_BG = "rgba(255, 255, 255, 0.05)";
+const SIDEBAR_HOVER_BG = "rgba(255, 255, 255, 0.03)";
 
 export function StudentLayout({ children }: { children: React.ReactNode }) {
+  const { t } = useTranslation();
   const { user, logout } = useAuth();
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const navGroups = [
+    {
+      label: t("myLearning"),
+      items: [
+        { name: t("dashboard"), href: "/student", icon: LayoutDashboard },
+        { name: t("subjects"), href: "/student/subjects", icon: BookOpen },
+        { name: t("attendance"), href: "/student/attendance", icon: Clock },
+      ],
+    },
+  ];
 
   const initials = user?.fullName?.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase() ?? "S";
 
@@ -43,7 +45,7 @@ export function StudentLayout({ children }: { children: React.ReactNode }) {
 
       <div className={`${isMobileMenuOpen ? "flex" : "hidden"} md:flex flex-col w-full md:w-56 flex-shrink-0`} style={{ backgroundColor: SIDEBAR_BG }}>
         <div className="hidden md:flex items-center px-5 py-[22px]" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-          <SidebarLogo portalLabel="Student Portal" />
+          <SidebarLogo portalLabel={t("studentPortal")} />
         </div>
 
         <nav className="flex-1 overflow-y-auto py-4 px-2.5" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
@@ -80,7 +82,7 @@ export function StudentLayout({ children }: { children: React.ReactNode }) {
             <div style={{ width: "30px", height: "30px", borderRadius: "50%", backgroundColor: "#1a4d30", border: "1.5px solid rgba(74,222,128,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: 700, color: "#a7f3d0", flexShrink: 0, fontFamily: "'Sora', sans-serif" }}>{initials}</div>
             <div style={{ minWidth: 0, flex: 1 }}>
               <p style={{ color: "#e2f5ea", fontSize: "12.5px", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user?.fullName}</p>
-              <p style={{ color: "#3d6650", fontSize: "11px", fontWeight: 500 }}>Student</p>
+              <p style={{ color: "#3d6650", fontSize: "11px", fontWeight: 500 }}>{t("student")}</p>
             </div>
           </div>
           <button
@@ -90,7 +92,7 @@ export function StudentLayout({ children }: { children: React.ReactNode }) {
             onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = "#4d7a62"; }}
           >
             <LogOut style={{ width: "14px", height: "14px" }} />
-            Sign out
+            {t("logout")}
           </button>
         </div>
       </div>

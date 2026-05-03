@@ -10,34 +10,32 @@ import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
+import i18n from "@/i18n";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 const DARK = "#0B2819";
 
-const tierMeta: Record<string, { dot: string; label: string; rowBg: string }> = {
-  critical: { dot: "#ef4444", label: "Critical",  rowBg: "#fef2f2" },
-  high:     { dot: "#f97316", label: "High",      rowBg: "#fff7ed" },
-  medium:   { dot: "#f59e0b", label: "Medium",    rowBg: "#fffbeb" },
-  low:      { dot: "#10b981", label: "Low",       rowBg: "transparent" },
-};
 
-const quickActions = [
-  { label: "New class",         href: "/admin/classes",       icon: GraduationCap },
-  { label: "New subject",       href: "/admin/subjects",      icon: BookOpen },
-  { label: "New user",          href: "/admin/users",         icon: ShieldCheck },
-  { label: "Send notification", href: "/admin/notifications", icon: Bell },
-];
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", color: "#9ca3af", textTransform: "uppercase", marginBottom: "14px" }}>
-      {children}
-    </p>
-  );
-}
 
 export default function AdminDashboard() {
+  const { t } = useTranslation();
+  
+  const tierMeta: Record<string, { dot: string; label: string; rowBg: string }> = {
+    critical: { dot: "#ef4444", label: t("critical"),  rowBg: "#fef2f2" },
+    high:     { dot: "#f97316", label: t("high"),      rowBg: "#fff7ed" },
+    medium:   { dot: "#f59e0b", label: t("medium"),    rowBg: "#fffbeb" },
+    low:      { dot: "#10b981", label: t("low"),       rowBg: "transparent" },
+  };
+  
+  const quickActions = [
+    { label: t("newClass"),         href: "/admin/classes",       icon: GraduationCap },
+    { label: t("newSubject"),       href: "/admin/subjects",      icon: BookOpen },
+    { label: t("newUser"),          href: "/admin/users",         icon: ShieldCheck },
+    { label: t("sendNotification"), href: "/admin/notifications", icon: Bell },
+  ];
+
   const { data: kpis, isLoading: lk } = useGetSchoolKpis();
   const { data: trend, isLoading: lt } = useGetAttendanceTrend({ weeks: 12 });
   const { data: riskByClass, isLoading: lr } = useGetRiskByClass();
@@ -58,15 +56,15 @@ export default function AdminDashboard() {
       if (!res.ok) throw new Error();
       const data = await res.json() as { studentsScored: number; alertsCreated: number };
       queryClient.invalidateQueries();
-      toast({ title: "Scan de risque terminé", description: `${data.studentsScored} élèves analysés · ${data.alertsCreated} alertes créées` });
+      toast({ title: t("scanComplete"), description: `${data.studentsScored} ${t("studentsAnalyzed")} · ${data.alertsCreated} ${t("alertsCreated")}` });
     } catch {
-      toast({ title: "Erreur lors du scan", variant: "destructive" });
+      toast({ title: t("scanError"), variant: "destructive" });
     } finally {
       setRefreshingRisk(false);
     }
   };
 
-  const today = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const today = new Date().toLocaleDateString("ar-EG", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
   if (loading) {
     return (
@@ -100,7 +98,7 @@ export default function AdminDashboard() {
       >
         <div>
           <h1 style={{ fontSize: "22px", fontWeight: 800, letterSpacing: "-0.02em", color: "#111827", fontFamily: "'Sora', sans-serif", lineHeight: 1.1 }}>
-            School Overview
+            {t("schoolOverview")}
           </h1>
           <p style={{ fontSize: "13px", color: "#9ca3af", marginTop: "5px" }}>{today}</p>
         </div>
@@ -157,34 +155,34 @@ export default function AdminDashboard() {
           {/* Dot texture */}
           <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)", backgroundSize: "20px 20px", pointerEvents: "none" }} />
           <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", color: "#4d7a62", textTransform: "uppercase", position: "relative" }}>
-            Attendance Rate
+            {t("attendanceRate")}
           </p>
           <p style={{ fontSize: "52px", fontWeight: 800, color: "white", fontFamily: "'Sora', sans-serif", lineHeight: 1, marginTop: "8px", position: "relative", letterSpacing: "-0.03em" }}>
-            {attendance.toFixed(1)}<span style={{ fontSize: "28px", color: "#4ade80", marginLeft: "2px" }}>%</span>
+            {attendance.toFixed(1)}<span style={{ fontSize: "28px", color: "#4ade80", marginInlineStart: "2px" }}>%</span>
           </p>
           <p style={{ fontSize: "12px", color: "#4d7a62", marginTop: "10px", position: "relative" }}>
-            30-day moving average
+            {t("movingAverage30d")}
           </p>
           <div style={{ position: "relative", marginTop: "16px", display: "flex", alignItems: "center", gap: "6px" }}>
             <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "11px", fontWeight: 600, color: "#4ade80", backgroundColor: "rgba(74,222,128,0.1)", padding: "3px 8px", borderRadius: "20px" }}>
               <ArrowUpRight style={{ width: "10px", height: "10px" }} />
-              On track
+              {t("onTrack")}
             </span>
           </div>
         </div>
 
         {/* Supporting metrics */}
         {[
-          { label: "Students at Risk", value: String(atRisk), sub: `${atRiskPct.toFixed(1)}% of enrolment`, alert: atRisk > 10 },
-          { label: "Engagement (7d)", value: String(engagement), sub: "Content interactions", alert: false },
-          { label: "Notifications", value: String(notifications), sub: "Sent this month", alert: false },
+          { label: t("studentsAtRisk"), value: String(atRisk), sub: `${atRiskPct.toFixed(1)}% ${t("ofEnrolment") || ""}`, alert: atRisk > 10 },
+          { label: t("engagement7d"), value: String(engagement), sub: t("contentInteractions"), alert: false },
+          { label: t("notifications"), value: String(notifications), sub: t("sentThisMonth"), alert: false },
         ].map((m, i) => (
           <div
             key={m.label}
             style={{
               padding: "28px 22px 24px",
               backgroundColor: "white",
-              borderLeft: "1px solid #f3f4f6",
+              borderInlineStart: "1px solid #f3f4f6",
             }}
           >
             <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", color: m.alert ? "#ef4444" : "#9ca3af", textTransform: "uppercase" }}>
@@ -218,11 +216,11 @@ export default function AdminDashboard() {
         >
           <div style={{ padding: "22px 24px 0", display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
             <div>
-              <p style={{ fontSize: "14px", fontWeight: 700, color: "#111827", fontFamily: "'Sora', sans-serif" }}>Attendance Trend</p>
-              <p style={{ fontSize: "11px", color: "#9ca3af", marginTop: "3px" }}>12-week rolling — % present per week</p>
+              <p style={{ fontSize: "14px", fontWeight: 700, color: "#111827", fontFamily: "'Sora', sans-serif" }}>{t("attendanceTrend")}</p>
+              <p style={{ fontSize: "11px", color: "#9ca3af", marginTop: "3px" }}>{t("weeklyRolling")}</p>
             </div>
             <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", color: "#4d7a62", backgroundColor: "#f0fdf4", padding: "4px 9px", borderRadius: "20px", textTransform: "uppercase" }}>
-              Weekly
+              {t("weekly")}
             </span>
           </div>
           <div style={{ padding: "8px 8px 16px" }}>
@@ -233,7 +231,7 @@ export default function AdminDashboard() {
                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "#d1d5db" }} domain={[50, 100]} />
                 <Tooltip
                   contentStyle={{ borderRadius: "10px", border: "1px solid #f3f4f6", boxShadow: "0 8px 24px rgba(0,0,0,0.08)", fontSize: "12px", fontFamily: "'Inter', sans-serif" }}
-                  formatter={(v: number) => [`${v}%`, "Attendance"]}
+                  formatter={(v: number) => [`${v}%`, t("attendance")]}
                 />
                 <Line
                   type="monotone" dataKey="rate" stroke="#0B2819" strokeWidth={2}
@@ -254,11 +252,11 @@ export default function AdminDashboard() {
         >
           <div style={{ padding: "22px 24px 0", display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
             <div>
-              <p style={{ fontSize: "14px", fontWeight: 700, color: "#111827", fontFamily: "'Sora', sans-serif" }}>Dropout Risk by Class</p>
-              <p style={{ fontSize: "11px", color: "#9ca3af", marginTop: "3px" }}>Stacked by risk tier — low to critical</p>
+              <p style={{ fontSize: "14px", fontWeight: 700, color: "#111827", fontFamily: "'Sora', sans-serif" }}>{t("dropoutRiskByClass")}</p>
+              <p style={{ fontSize: "11px", color: "#9ca3af", marginTop: "3px" }}>{t("stackedByTier")}</p>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              {[["#10b981", "Low"], ["#f59e0b", "Med"], ["#ef4444", "Crit"]].map(([color, label]) => (
+              {[[ "#10b981", t("low")], ["#f59e0b", t("medium")], ["#ef4444", t("critical")]].map(([color, label]) => (
                 <span key={label} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "10px", color: "#9ca3af", fontWeight: 600 }}>
                   <span style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: color, display: "inline-block" }} />
                   {label}
@@ -275,10 +273,10 @@ export default function AdminDashboard() {
                 <Tooltip
                   contentStyle={{ borderRadius: "10px", border: "1px solid #f3f4f6", boxShadow: "0 8px 24px rgba(0,0,0,0.08)", fontSize: "12px" }}
                 />
-                <Bar dataKey="riskCounts.low" name="Low" stackId="a" fill="#10b981" />
-                <Bar dataKey="riskCounts.medium" name="Medium" stackId="a" fill="#f59e0b" />
-                <Bar dataKey="riskCounts.high" name="High" stackId="a" fill="#f97316" />
-                <Bar dataKey="riskCounts.critical" name="Critical" stackId="a" fill="#ef4444" radius={[0, 3, 3, 0]} />
+                <Bar dataKey="riskCounts.low" name={t("low")} stackId="a" fill="#10b981" />
+                <Bar dataKey="riskCounts.medium" name={t("medium")} stackId="a" fill="#f59e0b" />
+                <Bar dataKey="riskCounts.high" name={t("high")} stackId="a" fill="#f97316" />
+                <Bar dataKey="riskCounts.critical" name={t("critical")} stackId="a" fill="#ef4444" radius={[0, 3, 3, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -299,7 +297,7 @@ export default function AdminDashboard() {
               {topAtRisk?.filter(s => (s.tier ?? "low") !== "low").length ?? 0}
             </span>
             <span style={{ fontSize: "14px", fontWeight: 700, color: "#111827", fontFamily: "'Sora', sans-serif" }}>
-              students flagged for dropout risk
+              {t("studentsFlaggedForRisk")}
             </span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -311,7 +309,7 @@ export default function AdminDashboard() {
               onMouseLeave={e => { e.currentTarget.style.borderColor = "#e5e7eb"; e.currentTarget.style.color = "#6b7280"; }}
             >
               <RefreshCw style={{ width: "11px", height: "11px", animation: refreshingRisk ? "spin 1s linear infinite" : "none" }} />
-              {refreshingRisk ? "Scan en cours…" : "Actualiser scores"}
+              {refreshingRisk ? t("scanningInProgress") : t("refreshScores")}
             </button>
             <Link href="/admin/analytics">
               <button
@@ -319,7 +317,7 @@ export default function AdminDashboard() {
                 onMouseEnter={e => { e.currentTarget.style.borderColor = DARK; e.currentTarget.style.color = DARK; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = "#e5e7eb"; e.currentTarget.style.color = "#6b7280"; }}
               >
-                Full analytics <ArrowRight style={{ width: "11px", height: "11px" }} />
+                {t("fullAnalytics")} <ArrowRight style={{ width: "11px", height: "11px" }} />
               </button>
             </Link>
           </div>
@@ -329,8 +327,8 @@ export default function AdminDashboard() {
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
             <thead>
               <tr style={{ borderBottom: "1px solid #f3f4f6" }}>
-                {["#", "Student", "Class", "Risk score", "Tier", "Key factor"].map(h => (
-                  <th key={h} style={{ padding: "10px 20px", textAlign: "left", fontSize: "10px", fontWeight: 700, color: "#d1d5db", letterSpacing: "0.08em", textTransform: "uppercase", whiteSpace: "nowrap" }}>
+                {["#", t("student"), t("class"), t("riskScore"), t("tier"), t("keyFactor")].map(h => (
+                  <th key={h} style={{ padding: "10px 20px", textAlign: "inline-start", fontSize: "10px", fontWeight: 700, color: "#d1d5db", letterSpacing: "0.08em", textTransform: "uppercase", whiteSpace: "nowrap" }}>
                     {h}
                   </th>
                 ))}
@@ -382,7 +380,7 @@ export default function AdminDashboard() {
               {topAtRisk?.length === 0 && (
                 <tr>
                   <td colSpan={6} style={{ padding: "48px 20px", textAlign: "center", color: "#d1d5db", fontSize: "13px" }}>
-                    No students currently at risk.
+                    {t("noStudentsAtRisk")}
                   </td>
                 </tr>
               )}
@@ -393,7 +391,7 @@ export default function AdminDashboard() {
         {/* Table footer */}
         <div style={{ padding: "14px 24px", borderTop: "1px solid #f9fafb", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <p style={{ fontSize: "11px", color: "#d1d5db" }}>
-            Showing top {topAtRisk?.length ?? 0} students · Updated in real-time
+            {t("showingTop", { n: topAtRisk?.length ?? 0 })} {t("updatedInRealTime")}
           </p>
           <Link href="/admin/users">
             <button
@@ -402,7 +400,7 @@ export default function AdminDashboard() {
               onMouseLeave={e => (e.currentTarget.style.color = "#9ca3af")}
             >
               <Users style={{ width: "11px", height: "11px" }} />
-              Manage user accounts
+              {t("manageUsers")}
             </button>
           </Link>
         </div>

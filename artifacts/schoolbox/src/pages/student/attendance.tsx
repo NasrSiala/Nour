@@ -6,8 +6,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { CalendarCheck, AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 export default function StudentAttendance() {
+  const { t } = useTranslation();
   const { user } = useAuth();
 
   const { data: students } = useListStudents({}, { query: { queryKey: getListStudentsQueryKey({}) } });
@@ -21,17 +23,17 @@ export default function StudentAttendance() {
   );
 
   const stats = [
-    { label: "Présences", value: summary?.present ?? 0, total: summary?.totalSessions, color: "bg-green-500", textColor: "text-green-600", bgColor: "bg-green-50" },
-    { label: "Absences", value: summary?.absent ?? 0, total: summary?.totalSessions, color: "bg-red-500", textColor: "text-red-600", bgColor: "bg-red-50" },
-    { label: "Retards", value: summary?.late ?? 0, total: summary?.totalSessions, color: "bg-amber-400", textColor: "text-amber-600", bgColor: "bg-amber-50" },
-    { label: "Excusés", value: summary?.excused ?? 0, total: summary?.totalSessions, color: "bg-blue-500", textColor: "text-blue-600", bgColor: "bg-blue-50" },
+    { label: t("present"), value: summary?.present ?? 0, total: summary?.totalSessions, color: "bg-green-500", textColor: "text-green-600", bgColor: "bg-green-50" },
+    { label: t("absent"), value: summary?.absent ?? 0, total: summary?.totalSessions, color: "bg-red-500", textColor: "text-red-600", bgColor: "bg-red-50" },
+    { label: t("late"), value: summary?.late ?? 0, total: summary?.totalSessions, color: "bg-amber-400", textColor: "text-amber-600", bgColor: "bg-amber-50" },
+    { label: t("excused"), value: summary?.excused ?? 0, total: summary?.totalSessions, color: "bg-blue-500", textColor: "text-blue-600", bgColor: "bg-blue-50" },
   ];
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Mes présences</h1>
-        <p className="text-muted-foreground">Suivi de vos présences et absences</p>
+        <h1 className="text-2xl font-bold tracking-tight">{t("myAttendance")}</h1>
+        <p className="text-muted-foreground">{t("attendanceTrackingDesc")}</p>
       </div>
 
       {isLoading || !studentId ? (
@@ -57,12 +59,12 @@ export default function StudentAttendance() {
                     </div>
                   </div>
                   <div>
-                    <p className="font-semibold text-lg">Taux de présence</p>
-                    <p className="text-sm text-muted-foreground">{summary?.totalSessions ?? 0} sessions au total</p>
+                    <p className="font-semibold text-lg">{t("attendanceRate")}</p>
+                    <p className="text-sm text-muted-foreground">{t("totalSessionsCount", { count: summary?.totalSessions ?? 0 })}</p>
                     {(summary?.consecutiveAbsences ?? 0) > 2 && (
                       <div className="flex items-center gap-1.5 mt-2 text-sm text-orange-600">
                         <AlertCircle className="h-4 w-4" />
-                        {summary?.consecutiveAbsences} absences consécutives
+                        {summary?.consecutiveAbsences} {t("consecutiveAbsences")}
                       </div>
                     )}
                   </div>
@@ -95,13 +97,13 @@ export default function StudentAttendance() {
           {summary?.absentDates && summary.absentDates.length > 0 && (
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">Dates d'absence</CardTitle>
+                <CardTitle className="text-base">{t("absenceDates")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-2">
                   {summary.absentDates.map((date, i) => (
                     <Badge key={i} variant="outline" className="text-xs text-red-600 border-red-200 bg-red-50">
-                      {new Date(date + "T12:00:00").toLocaleDateString("fr-TN", { day: "numeric", month: "short" })}
+                      {new Date(date + "T12:00:00").toLocaleDateString("ar-EG", { day: "numeric", month: "short" })}
                     </Badge>
                   ))}
                 </div>

@@ -4,27 +4,31 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "wouter";
 import { ArrowRight, ClipboardCheck } from "lucide-react";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
+import i18n from "@/i18n";
 
 const DARK = "#0B2819";
 
 const tierMeta: Record<string, { dot: string; border: string; label: string }> = {
-  low:      { dot: "#10b981", border: "#d1fae5", label: "Low"      },
-  medium:   { dot: "#f59e0b", border: "#fde68a", label: "Medium"   },
-  high:     { dot: "#f97316", border: "#fed7aa", label: "High"     },
-  critical: { dot: "#ef4444", border: "#fecaca", label: "Critical" },
+  low:      { dot: "#10b981", border: "#d1fae5", label: i18n.t("low")      },
+  medium:   { dot: "#f59e0b", border: "#fde68a", label: i18n.t("medium")   },
+  high:     { dot: "#f97316", border: "#fed7aa", label: i18n.t("high")     },
+  critical: { dot: "#ef4444", border: "#fecaca", label: i18n.t("critical") },
 };
 
-function greet(name: string) {
-  const h = new Date().getHours();
-  if (h < 12) return `Good morning, ${name.split(" ")[0]}.`;
-  if (h < 18) return `Good afternoon, ${name.split(" ")[0]}.`;
-  return `Good evening, ${name.split(" ")[0]}.`;
-}
-
 export default function TeacherDashboard() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const today = new Date().toISOString().split("T")[0];
-  const todayLabel = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+  const todayLabel = new Date().toLocaleDateString("ar-EG", { weekday: "long", day: "numeric", month: "long" });
+
+  const greet = (fullName: string) => {
+    const h = new Date().getHours();
+    const name = fullName.split(" ")[0];
+    if (h < 12) return t("goodMorning", { name });
+    if (h < 18) return t("goodAfternoon", { name });
+    return t("goodEvening", { name });
+  };
 
   const { data: classes, isLoading: lc } = useListClasses({ query: { queryKey: getListClassesQueryKey() } });
   const { data: todaySessions, isLoading: ls } = useListAttendanceSessions(
@@ -52,15 +56,15 @@ export default function TeacherDashboard() {
       >
         <div>
           <h1 style={{ fontSize: "22px", fontWeight: 800, letterSpacing: "-0.02em", color: "#111827", fontFamily: "'Sora', sans-serif", lineHeight: 1.1 }}>
-            {user?.fullName ? greet(user.fullName) : "Welcome back."}
+            {user?.fullName ? greet(user.fullName) : t("welcomeBack")}
           </h1>
           <p style={{ fontSize: "13px", color: "#9ca3af", marginTop: "5px" }}>{todayLabel}</p>
         </div>
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
           {[
-            { label: "Take attendance", href: "/teacher/attendance" },
-            { label: "View risk alerts", href: "/teacher/risk" },
-            { label: "Manage content", href: "/teacher/content" },
+            { label: t("takeAttendance"), href: "/teacher/attendance" },
+            { label: t("viewRiskAlerts"), href: "/teacher/risk" },
+            { label: t("manageContent"), href: "/teacher/content" },
           ].map(a => (
             <Link key={a.href} href={a.href}>
               <button
@@ -85,39 +89,39 @@ export default function TeacherDashboard() {
         {/* Featured — My Classes */}
         <div style={{ backgroundColor: DARK, padding: "28px 28px 24px", position: "relative", overflow: "hidden" }}>
           <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)", backgroundSize: "20px 20px", pointerEvents: "none" }} />
-          <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", color: "#4d7a62", textTransform: "uppercase", position: "relative" }}>My Classes</p>
+          <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", color: "#4d7a62", textTransform: "uppercase", position: "relative" }}>{t("myClasses")}</p>
           <p style={{ fontSize: "56px", fontWeight: 800, color: "white", fontFamily: "'Sora', sans-serif", lineHeight: 1, marginTop: "8px", position: "relative", letterSpacing: "-0.04em" }}>
             {lc ? "—" : myClasses.length}
           </p>
           <p style={{ fontSize: "12px", color: "#4d7a62", marginTop: "10px", position: "relative" }}>
-            {myClasses.length === 1 ? "1 class assigned to you" : `${myClasses.length} classes assigned to you`}
+            {myClasses.length === 1 ? t("classAssigned") : `${myClasses.length} ${t("classesAssigned")}`}
           </p>
           <Link href="/teacher/classes">
             <button
               style={{ display: "inline-flex", alignItems: "center", gap: "6px", marginTop: "16px", fontSize: "12px", fontWeight: 600, color: "#4ade80", background: "none", border: "none", cursor: "pointer", padding: 0, position: "relative" }}
             >
-              View classes <ArrowRight style={{ width: "11px", height: "11px" }} />
+              {t("viewClasses")} <ArrowRight style={{ width: "11px", height: "11px" }} />
             </button>
           </Link>
         </div>
         {/* Today's Sessions */}
         <div style={{ padding: "28px 22px 24px", backgroundColor: "white", borderLeft: "1px solid #f3f4f6" }}>
-          <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", color: "#9ca3af", textTransform: "uppercase" }}>Today's Sessions</p>
+          <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", color: "#9ca3af", textTransform: "uppercase" }}>{t("todaySessions")}</p>
           <p style={{ fontSize: "48px", fontWeight: 800, color: "#111827", fontFamily: "'Sora', sans-serif", lineHeight: 1, marginTop: "10px", letterSpacing: "-0.04em" }}>
             {ls ? "—" : todaySessions?.length ?? 0}
           </p>
-          <p style={{ fontSize: "12px", color: "#9ca3af", marginTop: "10px" }}>Attendance sessions logged</p>
+          <p style={{ fontSize: "12px", color: "#9ca3af", marginTop: "10px" }}>{t("sessionsLogged")}</p>
         </div>
         {/* Risk Alerts */}
         <div style={{ padding: "28px 22px 24px", backgroundColor: criticalCount > 0 ? "#fff8f7" : "white", borderLeft: "1px solid #f3f4f6" }}>
           <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", color: criticalCount > 0 ? "#ef4444" : "#9ca3af", textTransform: "uppercase" }}>
-            Risk Alerts
+            {t("riskAlerts")}
           </p>
           <p style={{ fontSize: "48px", fontWeight: 800, color: criticalCount > 0 ? "#ef4444" : "#111827", fontFamily: "'Sora', sans-serif", lineHeight: 1, marginTop: "10px", letterSpacing: "-0.04em" }}>
             {la ? "—" : unread.length}
           </p>
           <p style={{ fontSize: "12px", color: "#9ca3af", marginTop: "10px" }}>
-            {criticalCount > 0 ? `${criticalCount} high-priority` : "Pending review"}
+            {criticalCount > 0 ? `${criticalCount} ${t("highPriority")}` : t("pendingReview")}
           </p>
         </div>
       </motion.div>
@@ -133,13 +137,13 @@ export default function TeacherDashboard() {
           style={{ backgroundColor: "white", borderRadius: "16px", border: "1px solid #e5e7eb", overflow: "hidden" }}
         >
           <div style={{ padding: "20px 22px 16px", borderBottom: "1px solid #f9fafb", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <p style={{ fontSize: "14px", fontWeight: 700, color: "#111827", fontFamily: "'Sora', sans-serif" }}>My Classes</p>
+            <p style={{ fontSize: "14px", fontWeight: 700, color: "#111827", fontFamily: "'Sora', sans-serif" }}>{t("myClasses")}</p>
             <Link href="/teacher/classes">
               <button style={{ fontSize: "11px", fontWeight: 600, color: "#9ca3af", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
                 onMouseEnter={e => (e.currentTarget.style.color = DARK)}
                 onMouseLeave={e => (e.currentTarget.style.color = "#9ca3af")}
               >
-                All classes <ArrowRight style={{ width: "10px", height: "10px" }} />
+                {t("allClasses")} <ArrowRight style={{ width: "10px", height: "10px" }} />
               </button>
             </Link>
           </div>
@@ -150,7 +154,7 @@ export default function TeacherDashboard() {
               </div>
             ) : myClasses.length === 0 ? (
               <div style={{ padding: "40px 22px", textAlign: "center", color: "#d1d5db", fontSize: "13px" }}>
-                No classes assigned yet
+                {t("noClassesAssigned")}
               </div>
             ) : (
               myClasses.map((cls, i) => (
@@ -174,13 +178,13 @@ export default function TeacherDashboard() {
                         <div>
                           <p style={{ fontSize: "13px", fontWeight: 600, color: "#111827" }}>{cls.name}</p>
                           <p style={{ fontSize: "11px", color: "#9ca3af", marginTop: "1px" }}>
-                            {cls.studentCount} students · Grade {cls.gradeLevel} · {cls.academicYear}
+                            {cls.studentCount} {t("students")} · {t("grade")} {cls.gradeLevel} · {cls.academicYear}
                           </p>
                         </div>
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                         <ClipboardCheck style={{ width: "13px", height: "13px", color: "#9ca3af" }} />
-                        <span style={{ fontSize: "11px", fontWeight: 600, color: "#9ca3af" }}>Attendance</span>
+                        <span style={{ fontSize: "11px", fontWeight: 600, color: "#9ca3af" }}>{t("attendance")}</span>
                         <ArrowRight style={{ width: "11px", height: "11px", color: "#d1d5db" }} />
                       </div>
                     </div>
@@ -200,10 +204,10 @@ export default function TeacherDashboard() {
         >
           <div style={{ padding: "20px 22px 16px", borderBottom: "1px solid #f9fafb", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div style={{ display: "flex", alignItems: "baseline", gap: "8px" }}>
-              <p style={{ fontSize: "14px", fontWeight: 700, color: "#111827", fontFamily: "'Sora', sans-serif" }}>Risk Alerts</p>
+              <p style={{ fontSize: "14px", fontWeight: 700, color: "#111827", fontFamily: "'Sora', sans-serif" }}>{t("riskAlerts")}</p>
               {unread.length > 0 && (
                 <span style={{ fontSize: "10px", fontWeight: 700, color: "#ef4444", backgroundColor: "#fef2f2", padding: "2px 7px", borderRadius: "20px" }}>
-                  {unread.length} pending
+                  {unread.length} {t("pending")}
                 </span>
               )}
             </div>
@@ -212,7 +216,7 @@ export default function TeacherDashboard() {
                 onMouseEnter={e => (e.currentTarget.style.color = DARK)}
                 onMouseLeave={e => (e.currentTarget.style.color = "#9ca3af")}
               >
-                View all <ArrowRight style={{ width: "10px", height: "10px" }} />
+                {t("viewAll")} <ArrowRight style={{ width: "10px", height: "10px" }} />
               </button>
             </Link>
           </div>
@@ -224,7 +228,7 @@ export default function TeacherDashboard() {
             ) : unread.length === 0 ? (
               <div style={{ padding: "40px 22px", textAlign: "center" }}>
                 <p style={{ fontSize: "22px", fontWeight: 800, color: "#10b981", fontFamily: "'Sora', sans-serif" }}>0</p>
-                <p style={{ fontSize: "12px", color: "#d1d5db", marginTop: "6px" }}>No pending alerts</p>
+                <p style={{ fontSize: "12px", color: "#d1d5db", marginTop: "6px" }}>{t("noPendingAlerts")}</p>
               </div>
             ) : (
               unread.map((alert, i) => {

@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, studentsTable, attendanceRecordsTable, attendanceSessionsTable, classesTable } from "@workspace/db";
-import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
+import { eq, and, gte, lte, sql, desc, inArray } from "drizzle-orm";
 import { requireAuth } from "../middlewares/auth";
 import { CreateStudentBody, UpdateStudentBody } from "@workspace/api-zod";
 
@@ -39,7 +39,7 @@ router.get("/students", requireAuth, async (req, res): Promise<void> => {
   // Get class info for all students
   const classIds = [...new Set(students.filter(s => s.classId).map(s => s.classId!))];
   const classes = classIds.length > 0
-    ? await db.select().from(classesTable).where(sql`${classesTable.id} = ANY(ARRAY[${sql.join(classIds, sql`, `)}]::int[])`)
+    ? await db.select().from(classesTable).where(inArray(classesTable.id, classIds))
     : [];
   const classMap = new Map(classes.map(c => [c.id, c]));
 
@@ -56,11 +56,12 @@ router.post("/students", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
-  const [student] = await db.insert(studentsTable).values({
+  const [result] = await db.insert(studentsTable).values({
     ...parsed.data,
     enrollmentDate: new Date().toISOString().split("T")[0],
-  }).returning();
+  });
 
+  const [student] = await db.select().from(studentsTable).where(eq(studentsTable.id, result.insertId));
   res.status(201).json(formatStudent(student));
 });
 
@@ -95,7 +96,9 @@ router.patch("/students/:id", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
-  const [student] = await db.update(studentsTable).set(parsed.data).where(eq(studentsTable.id, id)).returning();
+  await db.update(studentsTable).set(parsed.data).where(eq(studentsTable.id, id));
+  
+  const [student] = await db.select().from(studentsTable).where(eq(studentsTable.id, id));
   if (!student) {
     res.status(404).json({ error: "Student not found" });
     return;

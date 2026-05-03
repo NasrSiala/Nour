@@ -38,7 +38,8 @@ router.post("/classes", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
-  const [cls] = await db.insert(classesTable).values(parsed.data).returning();
+  const [result] = await db.insert(classesTable).values(parsed.data);
+  const [cls] = await db.select().from(classesTable).where(eq(classesTable.id, result.insertId));
   res.status(201).json(await formatClass(cls));
 });
 

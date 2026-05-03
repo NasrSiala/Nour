@@ -9,38 +9,40 @@ import { Button } from "@/components/ui/button";
 import { OfflineBanner } from "@/components/offline-banner";
 import { SidebarLogo, MobileLogoMark } from "@/components/logo";
 import { NetworkStatusPill } from "@/components/network-status-pill";
-
-const navGroups = [
-  {
-    label: "Overview",
-    items: [
-      { name: "Dashboard", href: "/teacher", icon: LayoutDashboard },
-    ],
-  },
-  {
-    label: "Teaching",
-    items: [
-      { name: "My Classes", href: "/teacher/classes", icon: Users },
-      { name: "Attendance", href: "/teacher/attendance", icon: ClipboardCheck },
-      { name: "Content", href: "/teacher/content", icon: BookOpen },
-    ],
-  },
-  {
-    label: "Insights",
-    items: [
-      { name: "At-Risk Students", href: "/teacher/risk", icon: AlertTriangle },
-    ],
-  },
-];
+import { useTranslation } from "react-i18next";
 
 const SIDEBAR_BG = "#0B2819";
-const SIDEBAR_ACTIVE_BG = "rgba(255,255,255,0.08)";
-const SIDEBAR_HOVER_BG = "rgba(255,255,255,0.04)";
+const SIDEBAR_ACTIVE_BG = "rgba(255, 255, 255, 0.05)";
+const SIDEBAR_HOVER_BG = "rgba(255, 255, 255, 0.03)";
 
 export function TeacherLayout({ children }: { children: React.ReactNode }) {
+  const { t } = useTranslation();
   const { user, logout } = useAuth();
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const navGroups = [
+    {
+      label: t("overview"),
+      items: [
+        { name: t("dashboard"), href: "/teacher", icon: LayoutDashboard },
+      ],
+    },
+    {
+      label: t("teaching"),
+      items: [
+        { name: t("myClasses"), href: "/teacher/classes", icon: Users },
+        { name: t("attendance"), href: "/teacher/attendance", icon: ClipboardCheck },
+        { name: t("content"), href: "/teacher/content", icon: BookOpen },
+      ],
+    },
+    {
+      label: t("insights"),
+      items: [
+        { name: t("atRiskStudents"), href: "/teacher/risk", icon: AlertTriangle },
+      ],
+    },
+  ];
 
   const initials = user?.fullName?.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase() ?? "T";
 
@@ -63,7 +65,7 @@ export function TeacherLayout({ children }: { children: React.ReactNode }) {
         style={{ backgroundColor: SIDEBAR_BG }}
       >
         <div className="hidden md:flex items-center px-5 py-[22px]" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-          <SidebarLogo portalLabel="Teacher Portal" />
+          <SidebarLogo portalLabel={t("teacherPortal")} />
         </div>
 
         <nav className="flex-1 overflow-y-auto py-4 px-2.5" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
@@ -112,7 +114,7 @@ export function TeacherLayout({ children }: { children: React.ReactNode }) {
             </div>
             <div style={{ minWidth: 0, flex: 1 }}>
               <p style={{ color: "#e2f5ea", fontSize: "12.5px", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user?.fullName}</p>
-              <p style={{ color: "#3d6650", fontSize: "11px", fontWeight: 500 }}>Teacher</p>
+              <p style={{ color: "#3d6650", fontSize: "11px", fontWeight: 500 }}>{t("teacher")}</p>
             </div>
           </div>
           <button
@@ -122,7 +124,7 @@ export function TeacherLayout({ children }: { children: React.ReactNode }) {
             onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = "#4d7a62"; }}
           >
             <LogOut style={{ width: "14px", height: "14px" }} />
-            Sign out
+            {t("logout")}
           </button>
         </div>
       </div>

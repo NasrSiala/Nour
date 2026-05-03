@@ -11,6 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { Lock, ArrowRight, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
+import i18n from "@/i18n";
 
 const DARK = "#0B2819";
 
@@ -18,10 +20,10 @@ type AttendanceStatus = "present" | "absent" | "late" | "excused";
 type Phase = "setup" | "recording" | "reviewing" | "locked";
 
 const STATUS: Record<AttendanceStatus, { label: string; activeColor: string; activeBg: string; activeBorder: string }> = {
-  present: { label: "Present",  activeColor: "#10b981", activeBg: "#f0fdf4", activeBorder: "#10b981" },
-  absent:  { label: "Absent",   activeColor: "#ef4444", activeBg: "#fef2f2", activeBorder: "#ef4444" },
-  late:    { label: "Late",     activeColor: "#f59e0b", activeBg: "#fffbeb", activeBorder: "#f59e0b" },
-  excused: { label: "Excused",  activeColor: "#3b82f6", activeBg: "#eff6ff", activeBorder: "#3b82f6" },
+  present: { label: i18n.t("present"),  activeColor: "#10b981", activeBg: "#f0fdf4", activeBorder: "#10b981" },
+  absent:  { label: i18n.t("absent"),   activeColor: "#ef4444", activeBg: "#fef2f2", activeBorder: "#ef4444" },
+  late:    { label: i18n.t("late"),     activeColor: "#f59e0b", activeBg: "#fffbeb", activeBorder: "#f59e0b" },
+  excused: { label: i18n.t("excused"),  activeColor: "#3b82f6", activeBg: "#eff6ff", activeBorder: "#3b82f6" },
 };
 
 const STATUS_ORDER: AttendanceStatus[] = ["present", "absent", "late", "excused"];
@@ -44,6 +46,7 @@ function Pill({ label, onClick }: { label: string; onClick: () => void }) {
 }
 
 export default function AttendancePage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -74,7 +77,7 @@ export default function AttendancePage() {
 
   const existingSession = existingSessions?.find(s => s.period === selectedPeriod);
   const todaySessionCount = existingSessions?.length ?? 0;
-  const dateLabel = new Date(sessionDate + "T12:00:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+  const dateLabel = new Date(sessionDate + "T12:00:00").toLocaleDateString("ar-EG", { weekday: "long", day: "numeric", month: "long" });
 
   const handleStartSession = async () => {
     if (!selectedClassId) return;
@@ -86,7 +89,7 @@ export default function AttendancePage() {
       setStatuses(initial);
       setPhase("recording");
     } catch {
-      toast({ title: "Could not start session", variant: "destructive" });
+      toast({ title: t("errorStartingSession"), variant: "destructive" });
     }
   };
 
@@ -99,7 +102,7 @@ export default function AttendancePage() {
       queryClient.invalidateQueries({ queryKey: getListAttendanceSessionsQueryKey({ classId: selectedClassId ?? undefined }) });
       setPhase("locked");
     } catch {
-      toast({ title: "Could not save session", variant: "destructive" });
+      toast({ title: t("errorSavingSession"), variant: "destructive" });
     }
   };
 
@@ -125,13 +128,13 @@ export default function AttendancePage() {
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: "16px", flexWrap: "wrap" }}>
         <div>
           <h1 style={{ fontSize: "22px", fontWeight: 800, letterSpacing: "-0.02em", color: "#111827", fontFamily: "'Sora', sans-serif", lineHeight: 1.1 }}>
-            Attendance
+            {t("attendanceTitle")}
           </h1>
           <p style={{ fontSize: "13px", color: "#9ca3af", marginTop: "5px" }}>
             {dateLabel}
             {todaySessionCount > 0 && (
-              <span style={{ marginLeft: "10px", fontSize: "11px", fontWeight: 600, color: "#4d7a62", backgroundColor: "#f0fdf4", padding: "2px 8px", borderRadius: "20px" }}>
-                {todaySessionCount} session{todaySessionCount > 1 ? "s" : ""} logged today
+              <span style={{ marginInlineStart: "10px", fontSize: "11px", fontWeight: 600, color: "#4d7a62", backgroundColor: "#f0fdf4", padding: "2px 8px", borderRadius: "20px" }}>
+                {todaySessionCount} {t("sessionsLoggedToday")}
               </span>
             )}
           </p>
@@ -141,13 +144,13 @@ export default function AttendancePage() {
       {/* ── Session setup bar ── */}
       <div style={{ backgroundColor: "white", borderRadius: "14px", border: "1px solid #e5e7eb", padding: "18px 22px", display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: "5px", minWidth: "160px", flex: 1 }}>
-          <label style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", color: "#9ca3af", textTransform: "uppercase" }}>Class</label>
+          <label style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", color: "#9ca3af", textTransform: "uppercase" }}>{t("class")}</label>
           <Select
             disabled={phase === "recording" || phase === "reviewing"}
             onValueChange={v => { setSelectedClassId(Number(v)); setActiveSessionId(null); setStatuses({}); setPhase("setup"); }}
           >
             <SelectTrigger data-testid="select-class" style={{ height: "36px", fontSize: "13px", fontWeight: 600 }}>
-              <SelectValue placeholder="Select class" />
+              <SelectValue placeholder={t("selectClass")} />
             </SelectTrigger>
             <SelectContent>
               {myClasses.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
@@ -156,7 +159,7 @@ export default function AttendancePage() {
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "5px", width: "120px" }}>
-          <label style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", color: "#9ca3af", textTransform: "uppercase" }}>Period</label>
+          <label style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", color: "#9ca3af", textTransform: "uppercase" }}>{t("period")}</label>
           <Select
             disabled={phase === "recording" || phase === "reviewing"}
             value={String(selectedPeriod)}
@@ -166,7 +169,7 @@ export default function AttendancePage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {[1,2,3,4,5,6,7,8].map(p => <SelectItem key={p} value={String(p)}>Period {p}</SelectItem>)}
+              {[1,2,3,4,5,6,7,8].map(p => <SelectItem key={p} value={String(p)}>{t("periodLabel", { n: p })}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
@@ -179,8 +182,8 @@ export default function AttendancePage() {
           existingSession ? (
             <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", color: "#9ca3af", fontWeight: 500 }}>
               <Lock style={{ width: "13px", height: "13px", color: "#10b981" }} />
-              <span style={{ color: "#374151", fontWeight: 600 }}>Already recorded</span>
-              <span>— {existingSession.presentCount} present</span>
+              <span style={{ color: "#374151", fontWeight: 600 }}>{t("alreadyRecorded")}</span>
+              <span>— {existingSession.presentCount} {t("present")}</span>
             </div>
           ) : (
             <button
@@ -197,7 +200,7 @@ export default function AttendancePage() {
                 transition: "all 0.12s", fontFamily: "'Sora', sans-serif",
               }}
             >
-              {createSession.isPending ? "Starting…" : "Start session"}
+              {createSession.isPending ? t("starting") : t("startSession")}
               <ArrowRight style={{ width: "13px", height: "13px" }} />
             </button>
           )
@@ -205,7 +208,7 @@ export default function AttendancePage() {
 
         {(phase === "recording") && (
           <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-            <span style={{ fontSize: "11px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.08em" }}>Mark all:</span>
+            <span style={{ fontSize: "11px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.08em" }}>{t("markAll")}</span>
             {STATUS_ORDER.map(s => (
               <Pill key={s} label={STATUS[s].label} onClick={() => markAll(s)} />
             ))}
@@ -214,7 +217,7 @@ export default function AttendancePage() {
 
         {phase === "reviewing" && (
           <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", color: "#9ca3af" }}>
-            <span style={{ fontWeight: 600, color: "#374151" }}>Review before locking</span>
+            <span style={{ fontWeight: 600, color: "#374151" }}>{t("reviewBeforeLocking")}</span>
           </div>
         )}
       </div>
@@ -233,10 +236,10 @@ export default function AttendancePage() {
             <div style={{ padding: "18px 22px 16px", borderBottom: "1px solid #f9fafb", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
               <div>
                 <p style={{ fontSize: "14px", fontWeight: 700, color: "#111827", fontFamily: "'Sora', sans-serif" }}>
-                  Period {selectedPeriod} — {selectedClass?.name}
+                  {t("periodLabel", { n: selectedPeriod })} — {selectedClass?.name}
                 </p>
                 <p style={{ fontSize: "11px", color: "#9ca3af", marginTop: "3px" }}>
-                  {students?.length ?? 0} students on roster
+                  {students?.length ?? 0} {t("studentsOnRoster")}
                 </p>
               </div>
               {/* Live count chips */}
@@ -321,13 +324,13 @@ export default function AttendancePage() {
             {/* Roster footer */}
             <div style={{ padding: "16px 22px", borderTop: "1px solid #f9fafb", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <p style={{ fontSize: "11px", color: "#d1d5db" }}>
-                All students default to <strong style={{ color: "#10b981" }}>Present</strong> — adjust as needed
+                {t("defaultPresentHint")}
               </p>
               <button
                 onClick={() => setPhase("reviewing")}
                 style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "9px 18px", borderRadius: "8px", backgroundColor: DARK, color: "white", border: "none", fontSize: "13px", fontWeight: 700, cursor: "pointer", fontFamily: "'Sora', sans-serif" }}
               >
-                Review & save <ArrowRight style={{ width: "13px", height: "13px" }} />
+                {t("reviewAndSave")} <ArrowRight style={{ width: "13px", height: "13px" }} />
               </button>
             </div>
           </motion.div>
@@ -353,7 +356,7 @@ export default function AttendancePage() {
                     style={{
                       padding: "24px 20px 20px",
                       backgroundColor: featured ? DARK : "white",
-                      borderLeft: i > 0 ? "1px solid #f3f4f6" : "none",
+                      borderInlineStart: i > 0 ? "1px solid #f3f4f6" : "none",
                       position: "relative",
                       overflow: "hidden",
                     }}
@@ -368,7 +371,7 @@ export default function AttendancePage() {
                       {n}
                     </p>
                     <p style={{ fontSize: "11px", color: featured ? "#4d7a62" : "#d1d5db", marginTop: "8px", position: "relative" }}>
-                      {n === 1 ? "student" : "students"}
+                      {n === 1 ? t("student") : t("studentCount")}
                     </p>
                   </div>
                 );
@@ -380,10 +383,10 @@ export default function AttendancePage() {
               <div style={{ backgroundColor: "white", borderRadius: "16px", border: "1px solid #e5e7eb", overflow: "hidden", marginBottom: "16px" }}>
                 <div style={{ padding: "18px 22px 14px", borderBottom: "1px solid #f9fafb" }}>
                   <p style={{ fontSize: "14px", fontWeight: 700, color: "#111827", fontFamily: "'Sora', sans-serif" }}>
-                    Students not marked present
+                    {t("studentsNotPresent")}
                   </p>
                   <p style={{ fontSize: "11px", color: "#9ca3af", marginTop: "3px" }}>
-                    These {nonPresent.length} student{nonPresent.length > 1 ? "s" : ""} will be flagged in the record
+                    {t("flaggedInRecord")}
                   </p>
                 </div>
                 {nonPresent.map((student, i) => {
@@ -420,7 +423,7 @@ export default function AttendancePage() {
                 onMouseLeave={e => { e.currentTarget.style.borderColor = "#e5e7eb"; e.currentTarget.style.color = "#6b7280"; }}
               >
                 <ArrowLeft style={{ width: "13px", height: "13px" }} />
-                Back to roster
+                {t("backToRoster")}
               </button>
               <button
                 onClick={handleConfirmLock}
@@ -429,7 +432,7 @@ export default function AttendancePage() {
                 style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "9px 20px", borderRadius: "8px", backgroundColor: DARK, color: "white", border: "none", fontSize: "13px", fontWeight: 700, cursor: "pointer", fontFamily: "'Sora', sans-serif", opacity: lockSession.isPending ? 0.6 : 1 }}
               >
                 <Lock style={{ width: "13px", height: "13px" }} />
-                {lockSession.isPending ? "Saving…" : "Confirm & lock session"}
+                {lockSession.isPending ? t("loading") : t("confirmAndLock")}
               </button>
             </div>
           </motion.div>
@@ -447,10 +450,10 @@ export default function AttendancePage() {
               <CheckCircle2 style={{ width: "26px", height: "26px", color: "#10b981" }} />
             </div>
             <p style={{ fontSize: "20px", fontWeight: 800, color: "#111827", fontFamily: "'Sora', sans-serif", letterSpacing: "-0.02em" }}>
-              Session locked
+              {t("sessionLocked")}
             </p>
             <p style={{ fontSize: "13px", color: "#9ca3af", marginTop: "8px" }}>
-              Period {selectedPeriod} · {selectedClass?.name}
+              {t("periodLabel", { n: selectedPeriod })} · {selectedClass?.name}
             </p>
             <div style={{ display: "flex", justifyContent: "center", gap: "10px", marginTop: "20px", flexWrap: "wrap" }}>
               {STATUS_ORDER.map(s => {
@@ -468,7 +471,7 @@ export default function AttendancePage() {
               onClick={() => { setPhase("setup"); setActiveSessionId(null); setStatuses({}); }}
               style={{ marginTop: "28px", display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 600, color: "#6b7280", backgroundColor: "transparent", border: "1px solid #e5e7eb", padding: "8px 18px", borderRadius: "8px", cursor: "pointer" }}
             >
-              Take another session
+              {t("takeAnother")}
             </button>
           </motion.div>
         )}

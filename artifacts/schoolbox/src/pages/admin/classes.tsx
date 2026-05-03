@@ -25,10 +25,12 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { Plus, Users, GraduationCap, UserCheck } from "lucide-react";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 
 interface ClassFormData { name: string; gradeLevel: number; academicYear: string; }
 
 export default function AdminClasses() {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [teacherId, setTeacherId] = useState<string>("");
   const { toast } = useToast();
@@ -51,16 +53,16 @@ export default function AdminClasses() {
         data: {
           ...data,
           gradeLevel: Number(data.gradeLevel),
-          homeroomTeacherId: teacherId ? Number(teacherId) : null,
+          homeroomTeacherId: teacherId && teacherId !== "none" ? Number(teacherId) : null,
         }
       });
       queryClient.invalidateQueries({ queryKey: getListClassesQueryKey() });
-      toast({ title: "Classe créée avec succès" });
+      toast({ title: t("classCreated") });
       reset();
       setTeacherId("");
       setOpen(false);
     } catch {
-      toast({ title: "Erreur lors de la création", variant: "destructive" });
+      toast({ title: t("errorCreatingClass"), variant: "destructive" });
     }
   };
 
@@ -74,12 +76,12 @@ export default function AdminClasses() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Gestion des classes</h1>
-          <p className="text-muted-foreground">{classes?.length ?? 0} classes au total</p>
+        <div className="text-inline-start">
+          <h1 className="text-2xl font-bold tracking-tight">{t("classesTitle")}</h1>
+          <p className="text-muted-foreground">{classes?.length ?? 0} {t("totalClasses")}</p>
         </div>
         <Button onClick={() => setOpen(true)} className="gap-2" data-testid="button-create-class">
-          <Plus className="h-4 w-4" /> Nouvelle classe
+          <Plus className="h-4 w-4" /> {t("newClass")}
         </Button>
       </div>
 
@@ -87,11 +89,11 @@ export default function AdminClasses() {
         <div className="space-y-4">{[1, 2].map(i => <Skeleton key={i} className="h-32 rounded-xl" />)}</div>
       ) : (
         Object.entries(byGrade).sort(([a], [b]) => Number(a) - Number(b)).map(([grade, gradeClasses]) => (
-          <div key={grade}>
+          <div key={grade} className="text-inline-start">
             <div className="flex items-center gap-2 mb-3">
               <GraduationCap className="h-4 w-4 text-primary" />
-              <h2 className="font-semibold text-sm">Grade {grade}</h2>
-              <Badge variant="secondary" className="text-xs">{gradeClasses.length} classe{gradeClasses.length !== 1 ? "s" : ""}</Badge>
+              <h2 className="font-semibold text-sm">{t("grade")} {grade}</h2>
+              <Badge variant="secondary" className="text-xs">{gradeClasses.length} {t("class")}</Badge>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {gradeClasses.map((cls, i) => (
@@ -99,7 +101,7 @@ export default function AdminClasses() {
                   <Card data-testid={`class-card-${cls.id}`}>
                     <CardContent className="pt-5 pb-5">
                       <div className="flex items-start justify-between">
-                        <div>
+                        <div className="text-inline-start">
                           <p className="font-semibold">{cls.name}</p>
                           <p className="text-xs text-muted-foreground mt-0.5">{cls.academicYear}</p>
                         </div>
@@ -109,7 +111,7 @@ export default function AdminClasses() {
                       </div>
                       <div className="flex items-center gap-3 mt-4 text-sm">
                         <span className="font-bold text-lg">{cls.studentCount}</span>
-                        <span className="text-muted-foreground text-xs">élèves</span>
+                        <span className="text-muted-foreground text-xs">{t("studentCount")}</span>
                       </div>
                       {cls.teacherName ? (
                         <div className="flex items-center gap-1.5 mt-2">
@@ -117,7 +119,7 @@ export default function AdminClasses() {
                           <p className="text-xs text-emerald-700 font-medium truncate">{cls.teacherName}</p>
                         </div>
                       ) : (
-                        <p className="text-xs text-muted-foreground/60 mt-2 italic">Aucun titulaire</p>
+                        <p className="text-xs text-muted-foreground/60 mt-2 italic">{t("noTeacher")}</p>
                       )}
                     </CardContent>
                   </Card>
@@ -130,35 +132,37 @@ export default function AdminClasses() {
 
       <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { reset(); setTeacherId(""); } }}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Créer une nouvelle classe</DialogTitle></DialogHeader>
+          <DialogHeader className="text-inline-start">
+            <DialogTitle>{t("createClass")}</DialogTitle>
+          </DialogHeader>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label>Nom de la classe</Label>
-              <Input {...register("name", { required: true })} placeholder="Ex: 3ème A" data-testid="input-class-name" />
-              {errors.name && <p className="text-xs text-destructive">Requis</p>}
+            <div className="space-y-1.5 text-inline-start">
+              <Label>{t("className")}</Label>
+              <Input {...register("name", { required: true })} placeholder={t("classNamePlaceholder")} data-testid="input-class-name" />
+              {errors.name && <p className="text-xs text-destructive">{t("required")}</p>}
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3 text-inline-start">
               <div className="space-y-1.5">
-                <Label>Niveau (grade)</Label>
-                <Input type="number" {...register("gradeLevel", { required: true, min: 1, max: 12 })} placeholder="3" data-testid="input-grade-level" />
+                <Label>{t("gradeLevel")}</Label>
+                <Input type="number" {...register("gradeLevel", { required: true, min: 1, max: 12 })} placeholder={t("gradePlaceholder")} data-testid="input-grade-level" />
               </div>
               <div className="space-y-1.5">
-                <Label>Année scolaire</Label>
-                <Input {...register("academicYear", { required: true })} placeholder="2025-2026" data-testid="input-academic-year" />
+                <Label>{t("academicYear")}</Label>
+                <Input {...register("academicYear", { required: true })} placeholder={t("yearPlaceholder")} data-testid="input-academic-year" />
               </div>
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 text-inline-start">
               <Label className="flex items-center gap-1.5 text-xs font-semibold">
                 <UserCheck className="h-3.5 w-3.5 text-muted-foreground" />
-                Enseignant titulaire
-                <span className="text-muted-foreground font-normal">(optionnel)</span>
+                {t("homeroomTeacher")}
+                <span className="text-muted-foreground font-normal">({t("optional")})</span>
               </Label>
               <Select value={teacherId} onValueChange={setTeacherId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Choisir un enseignant…" />
+                  <SelectValue placeholder={t("chooseTeacher")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">— Aucun titulaire —</SelectItem>
+                  <SelectItem value="none">{t("noTeacherSelected")}</SelectItem>
                   {(teachers ?? []).map(t => (
                     <SelectItem key={t.id} value={String(t.id)}>
                       {t.fullName}
@@ -167,10 +171,10 @@ export default function AdminClasses() {
                 </SelectContent>
               </Select>
             </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setOpen(false)}>Annuler</Button>
+            <DialogFooter className="gap-2">
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>{t("cancel")}</Button>
               <Button type="submit" disabled={createClass.isPending} data-testid="button-submit-class">
-                {createClass.isPending ? "Création..." : "Créer"}
+                {createClass.isPending ? t("loading") : t("save")}
               </Button>
             </DialogFooter>
           </form>

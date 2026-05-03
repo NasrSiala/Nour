@@ -1,27 +1,27 @@
-import { pgTable, serial, text, integer, boolean, timestamp, date, uniqueIndex } from "drizzle-orm/pg-core";
+import { mysqlEnum, mysqlTable, serial, text, varchar, int, boolean, timestamp, date, uniqueIndex } from "drizzle-orm/mysql-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
-export const attendanceSessionsTable = pgTable("attendance_sessions", {
+export const attendanceSessionsTable = mysqlTable("attendance_sessions", {
   id: serial("id").primaryKey(),
-  classId: integer("class_id").notNull(),
-  teacherId: integer("teacher_id").notNull(),
+  classId: int("class_id").notNull(),
+  teacherId: int("teacher_id").notNull(),
   sessionDate: date("session_date").notNull(),
-  period: integer("period").notNull(),
-  subjectId: integer("subject_id"),
+  period: int("period").notNull(),
+  subjectId: int("subject_id"),
   isLocked: boolean("is_locked").notNull().default(false),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const attendanceRecordsTable = pgTable("attendance_records", {
+export const attendanceRecordsTable = mysqlTable("attendance_records", {
   id: serial("id").primaryKey(),
-  sessionId: integer("session_id").notNull(),
-  studentId: integer("student_id").notNull(),
-  status: text("status", { enum: ["present", "absent", "late", "excused"] }).notNull(),
+  sessionId: int("session_id").notNull(),
+  studentId: int("student_id").notNull(),
+  status: mysqlEnum("status", ["present", "absent", "late", "excused"]).notNull(),
   note: text("note"),
   prevHash: text("prev_hash").notNull().default("GENESIS"),
-  recordedAt: timestamp("recorded_at", { withTimezone: true }).notNull().defaultNow(),
-  recordedById: integer("recorded_by_id"),
+  recordedAt: timestamp("recorded_at").notNull().defaultNow(),
+  recordedById: int("recorded_by_id"),
 });
 
 export const insertAttendanceSessionSchema = createInsertSchema(attendanceSessionsTable).omit({ id: true, createdAt: true });

@@ -7,6 +7,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 const tierColor: Record<string, string> = {
   low: "bg-green-100 text-green-800",
@@ -16,6 +17,7 @@ const tierColor: Record<string, string> = {
 };
 
 export default function AdminAnalytics() {
+  const { t } = useTranslation();
   const { data: trend, isLoading: loadingTrend } = useGetAttendanceTrend({ weeks: 16 });
   const { data: riskByClass, isLoading: loadingRisk } = useGetRiskByClass();
   const { data: topAtRisk, isLoading: loadingTop } = useGetTopAtRiskStudents({ limit: 20 });
@@ -23,15 +25,15 @@ export default function AdminAnalytics() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-gray-900">Analytics</h1>
-        <p className="text-muted-foreground">Detailed performance metrics across all classes</p>
+      <div className="text-inline-start">
+        <h1 className="text-3xl font-bold tracking-tight text-gray-900">{t("analyticsTitle")}</h1>
+        <p className="text-muted-foreground">{t("analyticsSubtitle")}</p>
       </div>
 
       {/* Attendance Trend */}
       <Card>
-        <CardHeader>
-          <CardTitle>Attendance Trend (16 Weeks)</CardTitle>
+        <CardHeader className="text-inline-start">
+          <CardTitle>{t("attendanceTrend16w")}</CardTitle>
         </CardHeader>
         <CardContent className="h-[280px]">
           {loadingTrend ? <Skeleton className="h-full rounded-xl" /> : (
@@ -40,7 +42,7 @@ export default function AdminAnalytics() {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
                 <XAxis dataKey="weekLabel" axisLine={false} tickLine={false} tick={{ fontSize: 11 }} interval={1} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11 }} domain={[0, 100]} unit="%" />
-                <Tooltip formatter={(v: number) => [`${v.toFixed(1)}%`, "Attendance"]} />
+                <Tooltip formatter={(v: number) => [`${v.toFixed(1)}%`, t("attendance")]} />
                 <Legend />
                 <Line type="monotone" dataKey="rate" name="Attendance %" stroke="hsl(var(--primary))" strokeWidth={2.5} dot={{ r: 3, fill: "hsl(var(--primary))" }} activeDot={{ r: 5 }} />
                 <Line type="monotone" dataKey="absent" name="Absent" stroke="#ef4444" strokeWidth={1.5} strokeDasharray="4 2" dot={false} />
@@ -53,8 +55,8 @@ export default function AdminAnalytics() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Risk by Class */}
         <Card>
-          <CardHeader>
-            <CardTitle>Risk Distribution by Class</CardTitle>
+          <CardHeader className="text-inline-start">
+            <CardTitle>{t("riskDistributionByClass")}</CardTitle>
           </CardHeader>
           <CardContent className="h-[280px]">
             {loadingRisk ? <Skeleton className="h-full rounded-xl" /> : (
@@ -65,10 +67,10 @@ export default function AdminAnalytics() {
                   <YAxis dataKey="className" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 11 }} width={60} />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="riskCounts.low" name="Low" stackId="a" fill="#10b981" radius={[0, 0, 0, 0]} />
-                  <Bar dataKey="riskCounts.medium" name="Medium" stackId="a" fill="#f59e0b" />
-                  <Bar dataKey="riskCounts.high" name="High" stackId="a" fill="#f97316" />
-                  <Bar dataKey="riskCounts.critical" name="Critical" stackId="a" fill="#ef4444" radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="riskCounts.low" name={t("low")} stackId="a" fill="#10b981" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="riskCounts.medium" name={t("medium")} stackId="a" fill="#f59e0b" />
+                  <Bar dataKey="riskCounts.high" name={t("high")} stackId="a" fill="#f97316" />
+                  <Bar dataKey="riskCounts.critical" name={t("critical")} stackId="a" fill="#ef4444" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -77,8 +79,8 @@ export default function AdminAnalytics() {
 
         {/* Content Engagement Radar */}
         <Card>
-          <CardHeader>
-            <CardTitle>Content Engagement by Subject</CardTitle>
+          <CardHeader className="text-inline-start">
+            <CardTitle>{t("contentEngagementBySubject")}</CardTitle>
           </CardHeader>
           <CardContent className="h-[280px]">
             {loadingEngagement ? <Skeleton className="h-full rounded-xl" /> : (
@@ -86,8 +88,8 @@ export default function AdminAnalytics() {
                 <RadarChart data={engagement?.slice(0, 8)}>
                   <PolarGrid stroke="#f0f0f0" />
                   <PolarAngleAxis dataKey="subjectName" tick={{ fontSize: 10 }} />
-                  <Radar name="Students" dataKey="uniqueStudents" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.2} />
-                  <Radar name="Views" dataKey="totalViews" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.15} />
+                  <Radar name={t("student")} dataKey="uniqueStudents" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.2} />
+                  <Radar name={t("contentInteractions")} dataKey="totalViews" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.15} />
                   <Legend />
                   <Tooltip />
                 </RadarChart>
@@ -99,32 +101,32 @@ export default function AdminAnalytics() {
 
       {/* Class Risk Summary Cards */}
       {!loadingRisk && riskByClass && (
-        <div>
-          <h2 className="text-lg font-semibold mb-3">Class Risk Summary</h2>
+        <div className="text-inline-start">
+          <h2 className="text-lg font-semibold mb-3">{t("classRiskSummary")}</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {riskByClass.map(cls => {
               const total = cls.studentCount;
               const atRisk = (cls.riskCounts.high ?? 0) + (cls.riskCounts.critical ?? 0);
               const pct = total > 0 ? Math.round(atRisk / total * 100) : 0;
               return (
-                <Card key={cls.classId} className={cn("border-l-4", pct >= 30 ? "border-l-red-500" : pct >= 15 ? "border-l-orange-400" : "border-l-green-500")}>
+                <Card key={cls.classId} className={cn("border-s-4", pct >= 30 ? "border-s-red-500" : pct >= 15 ? "border-s-orange-400" : "border-s-green-500")}>
                   <CardContent className="pt-4 pb-4">
                     <div className="flex justify-between items-start mb-2">
                       <div>
                         <p className="font-semibold">{cls.className}</p>
-                        <p className="text-xs text-muted-foreground">{cls.teacherName ?? "No teacher"}</p>
+                        <p className="text-xs text-muted-foreground">{cls.teacherName ?? t("noTeacher")}</p>
                       </div>
-                      <span className="text-xs font-bold text-muted-foreground">{total} students</span>
+                      <span className="text-xs font-bold text-muted-foreground">{total} {t("studentCount")}</span>
                     </div>
                     <div className="flex gap-1.5 flex-wrap mt-3">
                       {(["low", "medium", "high", "critical"] as const).map(tier => (
                         <span key={tier} className={cn("text-xs px-2 py-0.5 rounded-full font-medium", tierColor[tier])}>
-                          {cls.riskCounts[tier] ?? 0} {tier}
+                          {cls.riskCounts[tier] ?? 0} {t(tier)}
                         </span>
                       ))}
                     </div>
                     <div className="mt-2 pt-2 border-t flex justify-between text-xs text-muted-foreground">
-                      <span>Avg risk score</span>
+                      <span>{t("avgRiskScore")}</span>
                       <span className="font-semibold">{(cls.avgRiskScore * 100).toFixed(0)}/100</span>
                     </div>
                   </CardContent>
@@ -137,24 +139,24 @@ export default function AdminAnalytics() {
 
       {/* Top At-Risk Table */}
       <Card>
-        <CardHeader>
-          <CardTitle>Top At-Risk Students (20)</CardTitle>
+        <CardHeader className="text-inline-start">
+          <CardTitle>{t("topAtRiskStudents20")}</CardTitle>
         </CardHeader>
         <CardContent>
           {loadingTop ? (
             <div className="space-y-2">{[1,2,3,4,5].map(i => <Skeleton key={i} className="h-10" />)}</div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left">
+              <table className="w-full text-sm text-inline-start">
                 <thead className="bg-gray-50 text-gray-600 text-xs uppercase tracking-wider">
                   <tr>
-                    <th className="px-4 py-3">#</th>
-                    <th className="px-4 py-3">Student</th>
-                    <th className="px-4 py-3">Class</th>
-                    <th className="px-4 py-3">Score</th>
-                    <th className="px-4 py-3">Tier</th>
-                    <th className="px-4 py-3">Consec. Absences</th>
-                    <th className="px-4 py-3">Key Factor</th>
+                    <th className="px-4 py-3 text-inline-start">#</th>
+                    <th className="px-4 py-3 text-inline-start">{t("student")}</th>
+                    <th className="px-4 py-3 text-inline-start">{t("class")}</th>
+                    <th className="px-4 py-3 text-inline-start">{t("status")}</th>
+                    <th className="px-4 py-3 text-inline-start">{t("tier")}</th>
+                    <th className="px-4 py-3 text-inline-start">{t("consecutiveAbsences")}</th>
+                    <th className="px-4 py-3 text-inline-start">{t("keyFactor")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -173,7 +175,7 @@ export default function AdminAnalytics() {
                       </td>
                       <td className="px-4 py-3">
                         <Badge className={cn("text-xs border", tierColor[s.tier])} variant="outline">
-                          {s.tier.toUpperCase()}
+                          {t(s.tier).toUpperCase()}
                         </Badge>
                       </td>
                       <td className="px-4 py-3 text-center">{s.consecutiveAbsences}</td>
@@ -181,7 +183,7 @@ export default function AdminAnalytics() {
                     </tr>
                   ))}
                   {topAtRisk?.length === 0 && (
-                    <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">No at-risk students found.</td></tr>
+                    <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">{t("noStudentsAtRisk")}</td></tr>
                   )}
                 </tbody>
               </table>

@@ -49,7 +49,7 @@ router.post("/notifications/:studentId/send", requireAuth, async (req, res): Pro
     return;
   }
 
-  const [notification] = await db.insert(notificationsTable).values({
+  const [result] = await db.insert(notificationsTable).values({
     studentId,
     templateKey: parsed.data.templateKey,
     lang: parsed.data.lang,
@@ -59,7 +59,9 @@ router.post("/notifications/:studentId/send", requireAuth, async (req, res): Pro
       parentName: student.parentName ?? "",
       parentPhone: student.parentPhone ?? "",
     },
-  }).returning();
+  });
+
+  const [notification] = await db.select().from(notificationsTable).where(eq(notificationsTable.id, result.insertId));
 
   res.json({
     id: notification.id,

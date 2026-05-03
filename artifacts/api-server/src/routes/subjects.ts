@@ -24,7 +24,7 @@ router.get("/subjects", requireAuth, async (req, res): Promise<void> => {
     count: count(),
   }).from(lessonsTable).groupBy(lessonsTable.subjectId);
 
-  const countMap = new Map(lessonCounts.map(l => [l.subjectId, l.count]));
+  const countMap = new Map(lessonCounts.map(l => [l.subjectId, Number(l.count)]));
 
   const results = await Promise.all(subjects.map(async s => ({
     id: s.id,
@@ -49,7 +49,9 @@ router.post("/subjects", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
-  const [subject] = await db.insert(subjectsTable).values(parsed.data).returning();
+  const [result] = await db.insert(subjectsTable).values(parsed.data);
+  const [subject] = await db.select().from(subjectsTable).where(eq(subjectsTable.id, result.insertId));
+  
   res.status(201).json({
     ...subject,
     teacherId: subject.teacherId ?? null,
@@ -75,7 +77,7 @@ router.get("/subjects/:id", requireAuth, async (req, res): Promise<void> => {
     ...subject,
     teacherId: subject.teacherId ?? null,
     teacherName: await getTeacherName(subject.teacherId),
-    lessonCount: lessonCount?.count ?? 0,
+    lessonCount: Number(lessonCount?.count ?? 0),
     createdAt: subject.createdAt.toISOString(),
   });
 });
@@ -119,7 +121,9 @@ router.post("/subjects/:id/lessons", requireAuth, async (req, res): Promise<void
     return;
   }
 
-  const [lesson] = await db.insert(lessonsTable).values({ ...parsed.data, subjectId: id }).returning();
+  const [result] = await db.insert(lessonsTable).values({ ...parsed.data, subjectId: id });
+  const [lesson] = await db.select().from(lessonsTable).where(eq(lessonsTable.id, result.insertId));
+  
   res.status(201).json({
     ...lesson,
     createdAt: lesson.createdAt.toISOString(),
@@ -162,7 +166,9 @@ router.patch("/subjects/:id", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
-  const [updated] = await db.update(subjectsTable).set(updates).where(eq(subjectsTable.id, id)).returning();
+  await db.update(subjectsTable).set(updates).where(eq(subjectsTable.id, id));
+  const [updated] = await db.select().from(subjectsTable).where(eq(subjectsTable.id, id));
+  
   if (!updated) { res.status(404).json({ error: "Subject not found" }); return; }
 
   const [lc] = await db.select({ count: count() }).from(lessonsTable).where(eq(lessonsTable.subjectId, id));
@@ -170,7 +176,7 @@ router.patch("/subjects/:id", requireAuth, async (req, res): Promise<void> => {
     ...updated,
     teacherId: updated.teacherId ?? null,
     teacherName: await getTeacherName(updated.teacherId),
-    lessonCount: lc?.count ?? 0,
+    lessonCount: Number(lc?.count ?? 0),
     createdAt: updated.createdAt.toISOString(),
   });
 });
@@ -179,8 +185,10 @@ router.delete("/subjects/:id", requireAuth, async (req, res): Promise<void> => {
   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(raw, 10);
 
-  const [deleted] = await db.delete(subjectsTable).where(eq(subjectsTable.id, id)).returning();
-  if (!deleted) { res.status(404).json({ error: "Subject not found" }); return; }
+  const [toDelete] = await db.select().from(subjectsTable).where(eq(subjectsTable.id, id));
+  if (!toDelete) { res.status(404).json({ error: "Subject not found" }); return; }
+  
+  await db.delete(subjectsTable).where(eq(subjectsTable.id, id));
 
   res.status(204).send();
 });
@@ -250,11 +258,11 @@ router.patch("/lessons/:id/file", requireAuth, async (req, res): Promise<void> =
     return;
   }
 
-  const [updated] = await db.update(lessonsTable)
+  await db.update(lessonsTable)
     .set({ fileUrl, fileName: typeof fileName === "string" ? fileName : null })
-    .where(eq(lessonsTable.id, id))
-    .returning();
+    .where(eq(lessonsTable.id, id));
 
+  const [updated] = await db.select().from(lessonsTable).where(eq(lessonsTable.id, id));
   if (!updated) { res.status(404).json({ error: "Lesson not found" }); return; }
 
   res.json({

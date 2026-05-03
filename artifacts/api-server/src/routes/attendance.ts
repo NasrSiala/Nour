@@ -59,10 +59,12 @@ router.post("/attendance/sessions", requireAuth, async (req, res): Promise<void>
 
   const user = (req as typeof req & { user: { userId: number } }).user;
 
-  const [session] = await db.insert(attendanceSessionsTable).values({
+  const [result] = await db.insert(attendanceSessionsTable).values({
     ...parsed.data,
     teacherId: user.userId,
-  }).returning();
+  });
+
+  const [session] = await db.select().from(attendanceSessionsTable).where(eq(attendanceSessionsTable.id, result.insertId));
 
   res.status(201).json(await formatSession(session));
 });
@@ -156,10 +158,11 @@ router.patch("/attendance/sessions/:id/lock", requireAuth, async (req, res): Pro
   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(raw, 10);
 
-  const [session] = await db.update(attendanceSessionsTable)
+  await db.update(attendanceSessionsTable)
     .set({ isLocked: true })
-    .where(eq(attendanceSessionsTable.id, id))
-    .returning();
+    .where(eq(attendanceSessionsTable.id, id));
+
+  const [session] = await db.select().from(attendanceSessionsTable).where(eq(attendanceSessionsTable.id, id));
 
   if (!session) {
     res.status(404).json({ error: "Session not found" });

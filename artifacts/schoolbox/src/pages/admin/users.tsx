@@ -49,10 +49,12 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 
+import { useTranslation } from "react-i18next";
+
 const roleConfig = {
-  admin: { label: "Admin", icon: ShieldCheck, color: "bg-violet-100 text-violet-700 border-violet-200" },
-  teacher: { label: "Enseignant", icon: BookOpen, color: "bg-blue-100 text-blue-700 border-blue-200" },
-  student: { label: "Élève", icon: GraduationCap, color: "bg-emerald-100 text-emerald-700 border-emerald-200" },
+  admin: { key: "admin", icon: ShieldCheck, color: "bg-violet-100 text-violet-700 border-violet-200" },
+  teacher: { key: "teacher", icon: BookOpen, color: "bg-blue-100 text-blue-700 border-blue-200" },
+  student: { key: "student", icon: GraduationCap, color: "bg-emerald-100 text-emerald-700 border-emerald-200" },
 };
 
 type Role = "admin" | "teacher" | "student";
@@ -66,6 +68,7 @@ const emptyForm = {
 };
 
 export default function UserManagement() {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [showPwd, setShowPwd] = useState(false);
@@ -86,9 +89,9 @@ export default function UserManagement() {
         queryClient.invalidateQueries({ queryKey: getListUsersQueryKey() });
         setOpen(false);
         setForm(emptyForm);
-        toast({ title: "Compte créé", description: `"${u.fullName}" (${u.username}) ajouté.` });
+        toast({ title: t("accountCreated"), description: `"${u.fullName}" (${u.username})` });
       },
-      onError: () => toast({ title: "Erreur", description: "Impossible de créer le compte.", variant: "destructive" }),
+      onError: () => toast({ title: t("error"), description: t("errorCreatingAccount"), variant: "destructive" }),
     },
   });
 
@@ -96,9 +99,9 @@ export default function UserManagement() {
     try {
       await deactivateUser.mutateAsync({ id });
       queryClient.invalidateQueries({ queryKey: getListUsersQueryKey() });
-      toast({ title: "Compte désactivé", description: `"${name}" a été désactivé.` });
+      toast({ title: t("accountDeactivated"), description: `"${name}"` });
     } catch {
-      toast({ title: "Erreur", variant: "destructive" });
+      toast({ title: t("error"), variant: "destructive" });
     }
   };
 
@@ -132,12 +135,12 @@ export default function UserManagement() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Utilisateurs</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">Gérez les comptes de l'établissement</p>
+          <h1 className="text-2xl font-bold tracking-tight">{t("usersTitle")}</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">{t("usersSubtitle")}</p>
         </div>
         <Button className="gap-2" onClick={() => setOpen(true)} data-testid="button-create-user">
           <Plus className="h-4 w-4" />
-          Nouvel utilisateur
+          {t("newUser")}
         </Button>
       </div>
 
@@ -158,7 +161,7 @@ export default function UserManagement() {
             </div>
             <div>
               <p className="text-xl font-black leading-none">{counts[role]}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{cfg.label}s</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{t(cfg.key)}</p>
             </div>
           </motion.div>
         ))}
@@ -167,10 +170,10 @@ export default function UserManagement() {
       {/* Search + Filter */}
       <div className="flex gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute inline-start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Rechercher par nom ou identifiant..."
-            className="pl-9 rounded-xl"
+            placeholder={t("searchPlaceholder")}
+            className="ps-9 rounded-xl text-inline-start"
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
@@ -178,13 +181,13 @@ export default function UserManagement() {
         <Select value={roleFilter} onValueChange={setRoleFilter}>
           <SelectTrigger className="w-40 rounded-xl">
             <Users className="h-4 w-4 mr-1.5 text-muted-foreground" />
-            <SelectValue placeholder="Tous les rôles" />
+            <SelectValue placeholder={t("allRoles")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Tous les rôles</SelectItem>
-            <SelectItem value="admin">Admins</SelectItem>
-            <SelectItem value="teacher">Enseignants</SelectItem>
-            <SelectItem value="student">Élèves</SelectItem>
+            <SelectItem value="all">{t("allRoles")}</SelectItem>
+            <SelectItem value="admin">{t("admin")}</SelectItem>
+            <SelectItem value="teacher">{t("teacher")}</SelectItem>
+            <SelectItem value="student">{t("student")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -197,22 +200,22 @@ export default function UserManagement() {
               {[1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto text-inline-start">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border bg-muted/30">
-                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Nom</th>
-                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Identifiant</th>
-                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Rôle</th>
-                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Statut</th>
-                    <th className="px-5 py-3.5 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wide">Actions</th>
+                    <th className="px-5 py-3.5 text-inline-start text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t("fullName")}</th>
+                    <th className="px-5 py-3.5 text-inline-start text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t("username")}</th>
+                    <th className="px-5 py-3.5 text-inline-start text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t("role")}</th>
+                    <th className="px-5 py-3.5 text-inline-start text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t("status")}</th>
+                    <th className="px-5 py-3.5 text-inline-end text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t("actions")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   {filtered.length === 0 && (
                     <tr>
                       <td colSpan={5} className="px-5 py-12 text-center text-muted-foreground">
-                        Aucun utilisateur trouvé
+                        {t("noUsersFound")}
                       </td>
                     </tr>
                   )}
@@ -234,21 +237,21 @@ export default function UserManagement() {
                         <td className="px-5 py-3.5">
                           <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold border ${cfg.color}`}>
                             <cfg.icon className="h-3 w-3" />
-                            {cfg.label}
+                            {t(cfg.key)}
                           </span>
                         </td>
                         <td className="px-5 py-3.5">
                           {user.isActive ? (
                             <span className="flex items-center gap-1.5 text-emerald-600 text-xs font-medium">
-                              <CheckCircle2 className="w-3.5 h-3.5" /> Actif
+                              <CheckCircle2 className="w-3.5 h-3.5" /> {t("active")}
                             </span>
                           ) : (
                             <span className="flex items-center gap-1.5 text-muted-foreground text-xs font-medium">
-                              <UserX className="w-3.5 h-3.5" /> Inactif
+                              <UserX className="w-3.5 h-3.5" /> {t("inactive")}
                             </span>
                           )}
                         </td>
-                        <td className="px-5 py-3.5 text-right">
+                        <td className="px-5 py-3.5 text-inline-end">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon" className="h-8 w-8" data-testid={`button-user-actions-${user.id}`}>
@@ -263,7 +266,7 @@ export default function UserManagement() {
                                 disabled={!user.isActive || deactivateUser.isPending}
                               >
                                 <UserX className="h-3.5 w-3.5" />
-                                Désactiver
+                                {t("deactivate")}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -286,25 +289,25 @@ export default function UserManagement() {
               <div className="p-1.5 rounded-lg bg-primary/10">
                 <Users className="h-4 w-4 text-primary" />
               </div>
-              Créer un compte
+              {t("createUser")}
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4 pt-1">
             <div className="space-y-1.5">
-              <Label htmlFor="fullName" className="text-xs font-semibold">Nom complet *</Label>
+              <Label htmlFor="fullName" className="text-xs font-semibold">{t("fullName")} *</Label>
               <Input
                 id="fullName"
-                placeholder="ex: Ahmed Ben Ali"
+                placeholder={t("fullNamePlaceholder")}
                 value={form.fullName}
                 onChange={e => setForm(f => ({ ...f, fullName: e.target.value }))}
                 required
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="username" className="text-xs font-semibold">Identifiant de connexion *</Label>
+              <Label htmlFor="username" className="text-xs font-semibold">{t("username")} *</Label>
               <Input
                 id="username"
-                placeholder="ex: ahmed.benali"
+                placeholder={t("usernamePlaceholder")}
                 value={form.username}
                 onChange={e => setForm(f => ({ ...f, username: e.target.value.toLowerCase().replace(/\s/g, "") }))}
                 className="font-mono"
@@ -312,12 +315,12 @@ export default function UserManagement() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="password" className="text-xs font-semibold">Mot de passe *</Label>
+              <Label htmlFor="password" className="text-xs font-semibold">{t("password")} *</Label>
               <div className="relative">
                 <Input
                   id="password"
                   type={showPwd ? "text" : "password"}
-                  placeholder="Minimum 8 caractères"
+                  placeholder={t("passwordMin")}
                   value={form.password}
                   onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
                   className="pr-10"
@@ -335,7 +338,7 @@ export default function UserManagement() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">Rôle *</Label>
+              <Label className="text-xs font-semibold">{t("role")} *</Label>
               <div className="grid grid-cols-3 gap-2">
                 {(Object.entries(roleConfig) as [Role, typeof roleConfig.admin][]).map(([role, cfg]) => (
                   <button
@@ -349,22 +352,22 @@ export default function UserManagement() {
                     }`}
                   >
                     <cfg.icon className="h-4 w-4" />
-                    {cfg.label}
+                    {t(cfg.key)}
                   </button>
                 ))}
               </div>
             </div>
             {form.role === "student" && classes && classes.length > 0 && (
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Classe assignée</Label>
+                <Label className="text-xs font-semibold">{t("assignedClass")}</Label>
                 <Select value={form.classId} onValueChange={v => setForm(f => ({ ...f, classId: v }))}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Choisir une classe (optionnel)" />
+                    <SelectValue placeholder={t("chooseClass")} />
                   </SelectTrigger>
                   <SelectContent>
                     {classes.map(c => (
                       <SelectItem key={c.id} value={String(c.id)}>
-                        {c.name} — Grade {c.gradeLevel} ({c.academicYear})
+                        {c.name} — {t("grade")} {c.gradeLevel} ({c.academicYear})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -373,7 +376,7 @@ export default function UserManagement() {
             )}
             <div className="flex gap-3 pt-2">
               <Button type="button" variant="outline" className="flex-1" onClick={() => setOpen(false)}>
-                Annuler
+                {t("cancel")}
               </Button>
               <Button
                 type="submit"
@@ -384,7 +387,7 @@ export default function UserManagement() {
                   ? <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
                   : <CheckCircle2 className="h-4 w-4" />
                 }
-                {createUser.isPending ? "Création..." : "Créer le compte"}
+                {createUser.isPending ? t("loading") : t("createUser")}
               </Button>
             </div>
           </form>

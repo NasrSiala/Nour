@@ -7,16 +7,19 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { GraduationCap, BookOpen, Eye, EyeOff } from "lucide-react";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { LoginLogo, LogoMark } from "@/components/logo";
-
-const roles = [
-  { value: "teacher" as const, label: "Teacher", icon: BookOpen, desc: "Manage classes & attendance" },
-  { value: "student" as const, label: "Student", icon: GraduationCap, desc: "Access lessons & content" },
-];
 
 const DARK = "#0B2819";
 
 export default function Signup() {
+  const { t } = useTranslation();
+  
+  const roles = [
+    { value: "teacher" as const, label: t("teacherRole"), icon: BookOpen, desc: t("teacherRoleDesc") },
+    { value: "student" as const, label: t("studentRole"), icon: GraduationCap, desc: t("studentRoleDesc") },
+  ];
+
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -31,11 +34,11 @@ export default function Signup() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirmPassword) {
-      toast({ title: "Passwords don't match", variant: "destructive" });
+      toast({ title: t("passwordsDoNotMatch"), variant: "destructive" });
       return;
     }
     if (password.length < 6) {
-      toast({ title: "Password must be at least 6 characters", variant: "destructive" });
+      toast({ title: t("passwordTooShort"), variant: "destructive" });
       return;
     }
     setIsSubmitting(true);
@@ -43,8 +46,8 @@ export default function Signup() {
       await register({ username, password, fullName, role });
       setLocation("/");
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Registration failed";
-      toast({ title: "Sign up failed", description: msg, variant: "destructive" });
+      const msg = err instanceof Error ? err.message : t("registrationFailed");
+      toast({ title: t("signupFailed"), description: msg, variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
@@ -73,15 +76,15 @@ export default function Signup() {
         {/* Editorial text */}
         <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.15 }} className="relative z-10">
           <p style={{ color: "#6ee7a8", fontSize: "11px", letterSpacing: "0.12em", fontWeight: 600, marginBottom: "20px" }}>
-            JOIN THE COMMUNITY
+            {t("joinCommunity")}
           </p>
           <h2 className="text-white leading-[1.1]"
             style={{ fontSize: "clamp(2rem, 3.2vw, 2.8rem)", fontFamily: "'Sora', sans-serif", fontWeight: 800, letterSpacing: "-0.02em" }}>
-            Your school.<br />
-            <span style={{ color: "#4ade80" }}>Always on.</span>
+            {t("yourSchool")}<br />
+            <span style={{ color: "#4ade80" }}>{t("alwaysWorking")}</span>
           </h2>
           <p style={{ color: "#a7c4b5", marginTop: "20px", fontSize: "15px", lineHeight: 1.65, maxWidth: "380px" }}>
-            Create your account and access your school's digital platform — lessons, attendance, and more — with or without internet.
+            {t("signupEditorialDesc")}
           </p>
 
           <div style={{ marginTop: "40px", borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: "32px", display: "flex", flexDirection: "column", gap: "16px" }}>
@@ -90,7 +93,7 @@ export default function Signup() {
                 style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
                 <r.icon style={{ width: "14px", height: "14px", color: "#4ade80", marginTop: "3px", flexShrink: 0 }} />
                 <div>
-                  <p style={{ color: "white", fontSize: "13px", fontWeight: 600 }}>{r.label} account</p>
+                  <p style={{ color: "white", fontSize: "13px", fontWeight: 600 }}>{r.value === "teacher" ? t("teacherAccount") : t("studentAccount")}</p>
                   <p style={{ color: "#7da890", fontSize: "12px", marginTop: "2px" }}>{r.desc}</p>
                 </div>
               </motion.div>
@@ -102,7 +105,7 @@ export default function Signup() {
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.9 }}
           className="relative z-10">
           <p style={{ color: "#3d6650", fontSize: "11px" }}>
-            Admin accounts are created by your school administrator.
+            {t("adminAccountNote")}
           </p>
         </motion.div>
       </div>
@@ -125,15 +128,15 @@ export default function Signup() {
 
             <div className="mb-8">
               <h1 style={{ fontSize: "26px", fontWeight: 800, color: "#111827", letterSpacing: "-0.02em", fontFamily: "'Sora', sans-serif" }}>
-                Create account
+                {t("signupTitle")}
               </h1>
-              <p style={{ color: "#9ca3af", marginTop: "6px", fontSize: "14px" }}>Fill in your details to get started</p>
+              <p style={{ color: "#9ca3af", marginTop: "6px", fontSize: "14px" }}>{t("signupSubtitle")}</p>
             </div>
 
             {/* Role picker */}
             <div style={{ marginBottom: "22px" }}>
               <label style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", color: "#9ca3af", textTransform: "uppercase", display: "block", marginBottom: "8px" }}>
-                I am a
+                {t("iAmA")}
               </label>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
                 {roles.map(r => {
@@ -166,33 +169,33 @@ export default function Signup() {
               <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginBottom: "24px" }}>
                 <div>
                   <Label style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", color: "#9ca3af", textTransform: "uppercase" }}>
-                    Full name
+                    {t("fullName")}
                   </Label>
                   <Input
                     value={fullName} onChange={e => setFullName(e.target.value)}
-                    placeholder="Your full name" required
+                    placeholder={t("fullNamePlaceholder")} required
                     style={{ marginTop: "6px", height: "42px", fontSize: "14px" }}
                   />
                 </div>
                 <div>
                   <Label style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", color: "#9ca3af", textTransform: "uppercase" }}>
-                    Username
+                    {t("username")}
                   </Label>
                   <Input
                     value={username} onChange={e => setUsername(e.target.value)}
-                    placeholder="e.g. ahmed.ben" required
+                    placeholder={t("usernamePlaceholder")} required
                     style={{ marginTop: "6px", height: "42px", fontSize: "14px" }}
                   />
                 </div>
                 <div>
                   <Label style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", color: "#9ca3af", textTransform: "uppercase" }}>
-                    Password
+                    {t("password")}
                   </Label>
                   <div style={{ position: "relative", marginTop: "6px" }}>
                     <Input
                       type={showPassword ? "text" : "password"}
                       value={password} onChange={e => setPassword(e.target.value)}
-                      placeholder="Min. 6 characters" required
+                      placeholder={t("passwordPlaceholder")} required
                       style={{ height: "42px", fontSize: "14px", paddingRight: "44px" }}
                     />
                     <button type="button" onClick={() => setShowPassword(!showPassword)}
@@ -203,12 +206,12 @@ export default function Signup() {
                 </div>
                 <div>
                   <Label style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", color: "#9ca3af", textTransform: "uppercase" }}>
-                    Confirm password
+                    {t("confirmPassword")}
                   </Label>
                   <Input
                     type={showPassword ? "text" : "password"}
                     value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
-                    placeholder="Repeat password" required
+                    placeholder={t("confirmPasswordPlaceholder")} required
                     style={{ marginTop: "6px", height: "42px", fontSize: "14px" }}
                   />
                 </div>
@@ -216,14 +219,14 @@ export default function Signup() {
 
               <Button type="submit" disabled={isSubmitting} className="w-full"
                 style={{ height: "46px", fontSize: "15px", fontWeight: 700, backgroundColor: DARK, fontFamily: "'Sora', sans-serif" }}>
-                {isSubmitting ? "Creating account…" : "Create account →"}
+                {isSubmitting ? t("registering") : `${t("createAccount")} ←`}
               </Button>
             </form>
 
             <p style={{ textAlign: "center", marginTop: "24px", fontSize: "13px", color: "#9ca3af" }}>
-              Already have an account?{" "}
+              {t("alreadyHaveAccount")}{" "}
               <Link href="/login">
-                <span style={{ color: DARK, fontWeight: 600, cursor: "pointer" }}>Sign in</span>
+                <span style={{ color: DARK, fontWeight: 600, cursor: "pointer" }}>{t("login")}</span>
               </Link>
             </p>
           </motion.div>

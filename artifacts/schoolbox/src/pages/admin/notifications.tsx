@@ -17,31 +17,18 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Bell, Send, CheckCircle2, Clock, XCircle, AlertTriangle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-
-const statusConfig = {
-  pending: { label: "Pending", icon: Clock, color: "bg-amber-100 text-amber-800" },
-  sent: { label: "Sent", icon: CheckCircle2, color: "bg-green-100 text-green-800" },
-  failed: { label: "Failed", icon: XCircle, color: "bg-red-100 text-red-800" },
-};
-
-type TemplateKey = SendNotificationBody["templateKey"];
-type Lang = SendNotificationBody["lang"];
-
-const templateOptions: { value: TemplateKey; label: string }[] = [
-  { value: "absence_alert", label: "Absence Alert" },
-  { value: "risk_alert", label: "Risk Warning" },
-  { value: "quiz_failure", label: "Quiz Failure" },
-];
-
-const langOptions: { value: Lang; label: string }[] = [
-  { value: "fr", label: "French (Français)" },
-  { value: "ar", label: "Arabic (العربية)" },
-];
+import { useTranslation } from "react-i18next";
 
 function NotificationRow({ n, index }: { n: { id: number; studentName?: string | null; templateKey: string; lang: string; status: string; sentAt?: string | null; createdAt: string; retries?: number | null }; index: number }) {
+  const { t } = useTranslation();
+  const statusConfig = {
+    pending: { label: t("pending"), icon: Clock, color: "bg-amber-100 text-amber-800" },
+    sent: { label: t("sent"), icon: CheckCircle2, color: "bg-green-100 text-green-800" },
+    failed: { label: t("failed"), icon: XCircle, color: "bg-red-100 text-red-800" },
+  };
   const cfg = statusConfig[n.status as keyof typeof statusConfig] ?? statusConfig.pending;
   const Icon = cfg.icon;
-  const date = new Date(n.createdAt).toLocaleDateString("fr-TN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  const date = new Date(n.createdAt).toLocaleDateString("ar-EG", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
   return (
     <motion.tr
       initial={{ opacity: 0, y: 6 }}
@@ -50,8 +37,8 @@ function NotificationRow({ n, index }: { n: { id: number; studentName?: string |
       className="hover:bg-gray-50/50 transition-colors"
     >
       <td className="px-4 py-3 font-medium text-gray-900 text-sm">{n.studentName ?? "—"}</td>
-      <td className="px-4 py-3 text-sm text-gray-600">{templateOptions.find(t => t.value === n.templateKey)?.label ?? n.templateKey}</td>
-      <td className="px-4 py-3 text-xs text-gray-500 uppercase">{n.lang}</td>
+      <td className="px-4 py-3 text-sm text-gray-600">{t(n.templateKey)}</td>
+      <td className="px-4 py-3 text-xs text-gray-500 uppercase">{n.lang === "ar" ? t("arabic") : t("french")}</td>
       <td className="px-4 py-3">
         <span className={cn("inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium", cfg.color)}>
           <Icon className="h-3 w-3" />
@@ -64,6 +51,18 @@ function NotificationRow({ n, index }: { n: { id: number; studentName?: string |
 }
 
 export default function AdminNotifications() {
+  const { t } = useTranslation();
+  const templateOptions: { value: TemplateKey; label: string }[] = [
+    { value: "absence_alert", label: t("absence_alert") },
+    { value: "risk_alert", label: t("risk_alert") },
+    { value: "quiz_failure", label: t("quiz_failure") },
+  ];
+
+  const langOptions: { value: Lang; label: string }[] = [
+    { value: "fr", label: t("french") },
+    { value: "ar", label: t("arabic") },
+  ];
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [filterStatus, setFilterStatus] = useState<string>("all");
@@ -87,7 +86,7 @@ export default function AdminNotifications() {
 
   const handleSend = async () => {
     if (!selectedStudentId || !selectedTemplate) {
-      toast({ title: "Please select a student and template", variant: "destructive" });
+      toast({ title: t("pleaseSelectStudentAndTemplate"), variant: "destructive" });
       return;
     }
     setIsSending(true);
@@ -95,11 +94,11 @@ export default function AdminNotifications() {
       await sendMutation.mutateAsync({ studentId: Number(selectedStudentId), data: { templateKey: selectedTemplate, lang: selectedLang } });
       queryClient.invalidateQueries({ queryKey: getListNotificationsQueryKey({}) });
       queryClient.invalidateQueries({ queryKey: getListNotificationsQueryKey({ status: "pending" }) });
-      toast({ title: "Notification queued successfully" });
+      toast({ title: t("notificationQueued") });
       setSelectedStudentId("");
       setSelectedTemplate("");
     } catch {
-      toast({ title: "Failed to send notification", variant: "destructive" });
+      toast({ title: t("scanError"), variant: "destructive" });
     } finally {
       setIsSending(false);
     }
@@ -107,17 +106,17 @@ export default function AdminNotifications() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-gray-900">Parent Notifications</h1>
-        <p className="text-muted-foreground">Manage and send SMS/WhatsApp notifications to parents</p>
+      <div className="text-inline-start">
+        <h1 className="text-3xl font-bold tracking-tight text-gray-900">{t("parentNotifications")}</h1>
+        <p className="text-muted-foreground">{t("manageNotificationsSubtitle")}</p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
-          { label: "Sent", count: sentCount, icon: CheckCircle2, color: "text-green-600 bg-green-50" },
-          { label: "Pending", count: pendingCount, icon: Clock, color: "text-amber-600 bg-amber-50" },
-          { label: "Failed", count: failedCount, icon: XCircle, color: "text-red-600 bg-red-50" },
+          { label: t("sent"), count: sentCount, icon: CheckCircle2, color: "text-green-600 bg-green-50" },
+          { label: t("pending"), count: pendingCount, icon: Clock, color: "text-amber-600 bg-amber-50" },
+          { label: t("failed"), count: failedCount, icon: XCircle, color: "text-red-600 bg-red-50" },
         ].map((stat, i) => (
           <Card key={i}>
             <CardContent className="pt-5 pb-5">
@@ -136,18 +135,18 @@ export default function AdminNotifications() {
       {/* Compose */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-base">
+          <CardTitle className="flex items-center gap-2 text-base text-inline-start">
             <Bell className="h-4 w-4 text-primary" />
-            Send Notification
+            {t("sendNotification")}
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end text-inline-start">
             <div className="space-y-1.5">
-              <Label>Student</Label>
+              <Label>{t("student")}</Label>
               <Select value={selectedStudentId} onValueChange={setSelectedStudentId}>
                 <SelectTrigger data-testid="select-student">
-                  <SelectValue placeholder="Choose student…" />
+                  <SelectValue placeholder={t("chooseStudent")} />
                 </SelectTrigger>
                 <SelectContent>
                   {students?.map(s => (
@@ -160,10 +159,10 @@ export default function AdminNotifications() {
             </div>
 
             <div className="space-y-1.5">
-              <Label>Template</Label>
+              <Label>{t("template")}</Label>
               <Select value={selectedTemplate} onValueChange={v => setSelectedTemplate(v as TemplateKey)}>
                 <SelectTrigger data-testid="select-template">
-                  <SelectValue placeholder="Choose template…" />
+                  <SelectValue placeholder={t("chooseTemplate")} />
                 </SelectTrigger>
                 <SelectContent>
                   {templateOptions.map(t => (
@@ -174,7 +173,7 @@ export default function AdminNotifications() {
             </div>
 
             <div className="space-y-1.5">
-              <Label>Language</Label>
+              <Label>{t("language")}</Label>
               <Select value={selectedLang} onValueChange={v => setSelectedLang(v as Lang)}>
                 <SelectTrigger data-testid="select-lang">
                   <SelectValue />
@@ -189,7 +188,7 @@ export default function AdminNotifications() {
 
             <Button onClick={handleSend} disabled={isSending || !selectedStudentId || !selectedTemplate} className="gap-2 w-full" data-testid="button-send">
               <Send className="h-4 w-4" />
-              {isSending ? "Sending…" : "Send Notification"}
+              {isSending ? t("sending") : t("sendNotification")}
             </Button>
           </div>
 
@@ -212,17 +211,17 @@ export default function AdminNotifications() {
 
       {/* Notification Log */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-3">
-          <CardTitle className="text-base">Notification Log</CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between pb-3 text-inline-start">
+          <CardTitle className="text-base">{t("notificationLog")}</CardTitle>
           <Select value={filterStatus} onValueChange={setFilterStatus}>
             <SelectTrigger className="w-36 h-8 text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="sent">Sent</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="failed">Failed</SelectItem>
+              <SelectItem value="all">{t("all")}</SelectItem>
+              <SelectItem value="sent">{t("sent")}</SelectItem>
+              <SelectItem value="pending">{t("pending")}</SelectItem>
+              <SelectItem value="failed">{t("failed")}</SelectItem>
             </SelectContent>
           </Select>
         </CardHeader>
@@ -231,14 +230,14 @@ export default function AdminNotifications() {
             <div className="space-y-2">{[1,2,3,4,5].map(i => <Skeleton key={i} className="h-10" />)}</div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left">
+              <table className="w-full text-sm text-inline-start">
                 <thead className="bg-gray-50 text-gray-600 text-xs uppercase tracking-wider">
                   <tr>
-                    <th className="px-4 py-3">Student</th>
-                    <th className="px-4 py-3">Template</th>
-                    <th className="px-4 py-3">Lang</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3">Date</th>
+                    <th className="px-4 py-3 text-inline-start">{t("student")}</th>
+                    <th className="px-4 py-3 text-inline-start">{t("template")}</th>
+                    <th className="px-4 py-3 text-inline-start">{t("language")}</th>
+                    <th className="px-4 py-3 text-inline-start">{t("status")}</th>
+                    <th className="px-4 py-3 text-inline-start">{t("date")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -248,7 +247,7 @@ export default function AdminNotifications() {
                   {notifications?.length === 0 && (
                     <tr>
                       <td colSpan={5} className="px-4 py-8 text-center text-gray-400">
-                        No notifications found.
+                        {t("noData")}
                       </td>
                     </tr>
                   )}

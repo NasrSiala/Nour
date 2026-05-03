@@ -139,11 +139,11 @@ router.patch("/risk/alerts/:id/acknowledge", requireAuth, async (req, res): Prom
   const id = parseInt(raw, 10);
   const user = (req as typeof req & { user: { userId: number } }).user;
 
-  const [alert] = await db.update(riskAlertsTable)
+  await db.update(riskAlertsTable)
     .set({ acknowledgedAt: new Date(), acknowledgedById: user.userId })
-    .where(eq(riskAlertsTable.id, id))
-    .returning();
+    .where(eq(riskAlertsTable.id, id));
 
+  const [alert] = await db.select().from(riskAlertsTable).where(eq(riskAlertsTable.id, id));
   if (!alert) {
     res.status(404).json({ error: "Alert not found" });
     return;

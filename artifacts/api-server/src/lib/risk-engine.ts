@@ -19,10 +19,7 @@ export async function computeRiskScore(studentId: number, _classId: number): Pro
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
   const records = await db.select().from(attendanceRecordsTable)
-    .where(and(
-      eq(attendanceRecordsTable.studentId, studentId),
-      eq(attendanceRecordsTable.sessionId, attendanceRecordsTable.sessionId),
-    ));
+    .where(eq(attendanceRecordsTable.studentId, studentId));
 
   const recentRecords = records.filter(r => r.recordedAt >= thirtyDaysAgo);
   const totalRecent = recentRecords.length;
@@ -44,10 +41,10 @@ export async function computeRiskScore(studentId: number, _classId: number): Pro
 
   const tier = scoreToTier(score);
   const explanation: string[] = [];
-  if (consecutiveAbsences >= 5) explanation.push(`Absent ${consecutiveAbsences} consecutive days`);
-  if (absentRate30d > 0.4) explanation.push(`Absence rate ${Math.round(absentRate30d * 100)}% this month`);
-  if (totalRecent < 3) explanation.push("Insufficient attendance data");
-  if (explanation.length === 0) explanation.push("Attendance patterns are within normal range");
+  if (consecutiveAbsences >= 5) explanation.push(`غائب منذ ${consecutiveAbsences} أيام متتالية`);
+  if (absentRate30d > 0.4) explanation.push(`معدل الغياب ${Math.round(absentRate30d * 100)}٪ هذا الشهر`);
+  if (totalRecent < 3) explanation.push("بيانات الحضور غير كافية");
+  if (explanation.length === 0) explanation.push("أنماط الحضور ضمن النطاق الطبيعي");
 
   return { score, tier, explanation, features: { absentRate30d, consecutiveAbsences, totalRecentSessions: totalRecent } };
 }
@@ -63,20 +60,21 @@ export async function runRiskEngine(): Promise<{ studentsScored: number; alertsC
     if (!student.classId) continue;
     try {
       const computed = await computeRiskScore(student.id, student.classId);
-      const [score] = await db.insert(riskScoresTable).values({
+      const [res] = await db.insert(riskScoresTable).values({
         studentId: student.id,
         classId: student.classId,
         score: computed.score,
         tier: computed.tier,
         featuresJson: computed.features,
         explanationJson: computed.explanation,
-      }).returning();
+      });
 
+      const scoreId = res.insertId;
       studentsScored++;
 
       if (computed.tier === "high" || computed.tier === "critical") {
         await db.insert(riskAlertsTable).values({
-          riskScoreId: score.id,
+          riskScoreId: scoreId,
           studentId: student.id,
           classId: student.classId,
           alertType: `risk_${computed.tier}`,

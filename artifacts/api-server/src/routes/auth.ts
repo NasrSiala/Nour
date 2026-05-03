@@ -75,7 +75,10 @@ router.post("/auth/register", async (req, res): Promise<void> => {
   }
 
   const hashedPassword = hashPassword(password);
-  const [user] = await db.insert(usersTable).values({ username, fullName, hashedPassword, role }).returning();
+  const [insertRes] = await db.insert(usersTable).values({ username, fullName, hashedPassword, role });
+  const userId = insertRes.insertId;
+
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
 
   const token = generateToken(user.id, user.role);
   req.log.info({ userId: user.id, role: user.role }, "User registered");

@@ -49,14 +49,15 @@ router.post("/users", requireAuth, requireRole("admin"), async (req, res): Promi
   const { username, fullName, password, role, classId } = parsed.data;
   const hashed = hashPassword(password);
 
-  const [user] = await db.insert(usersTable).values({
+  const [result] = await db.insert(usersTable).values({
     username,
     fullName,
     hashedPassword: hashed,
     role,
     classId: classId ?? null,
-  }).returning();
+  });
 
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, result.insertId));
   res.status(201).json(formatUser(user));
 });
 
@@ -89,7 +90,9 @@ router.patch("/users/:id", requireAuth, requireRole("admin"), async (req, res): 
   if (parsed.data.classId !== undefined) updates.classId = parsed.data.classId;
   if (parsed.data.isActive != null) updates.isActive = parsed.data.isActive;
 
-  const [user] = await db.update(usersTable).set(updates).where(eq(usersTable.id, id)).returning();
+  await db.update(usersTable).set(updates).where(eq(usersTable.id, id));
+  
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, id));
   if (!user) {
     res.status(404).json({ error: "User not found" });
     return;
@@ -102,7 +105,9 @@ router.patch("/users/:id/deactivate", requireAuth, requireRole("admin"), async (
   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(raw, 10);
 
-  const [user] = await db.update(usersTable).set({ isActive: false }).where(eq(usersTable.id, id)).returning();
+  await db.update(usersTable).set({ isActive: false }).where(eq(usersTable.id, id));
+  
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, id));
   if (!user) {
     res.status(404).json({ error: "User not found" });
     return;

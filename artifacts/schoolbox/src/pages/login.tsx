@@ -7,14 +7,16 @@ import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, WifiOff } from "lucide-react";
 import { motion } from "framer-motion";
 import { LoginLogo, LogoMark } from "@/components/logo";
+import { useTranslation } from "react-i18next";
 
 const DEMO = [
-  { role: "Admin", user: "admin", pass: "admin123" },
-  { role: "Teacher", user: "teacher1", pass: "teacher123" },
-  { role: "Student", user: "student1", pass: "student123" },
+  { role: "admin", user: "admin", pass: "admin123" },
+  { role: "teacher", user: "teacher1", pass: "teacher123" },
+  { role: "student", user: "student1", pass: "student123" },
 ];
 
 export default function Login() {
+  const { t } = useTranslation();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -30,8 +32,8 @@ export default function Login() {
       await login({ username, password });
       setLocation("/");
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Invalid credentials";
-      toast({ title: "Login failed", description: msg, variant: "destructive" });
+      const msg = err instanceof Error ? err.message : t("invalidCredentials");
+      toast({ title: t("loginFailed"), description: msg, variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
@@ -80,25 +82,25 @@ export default function Login() {
           className="relative z-10"
         >
           <p style={{ color: "#6ee7a8", fontSize: "11px", letterSpacing: "0.12em", fontWeight: 600, marginBottom: "20px" }}>
-            BUILT FOR RURAL TUNISIA
+            {t("designedForTunisia")}
           </p>
           <h2
             className="text-white leading-[1.1]"
             style={{ fontSize: "clamp(2rem, 3.5vw, 3rem)", fontFamily: "'Sora', sans-serif", fontWeight: 800, letterSpacing: "-0.02em" }}
           >
-            Education doesn't stop<br />
-            <span style={{ color: "#4ade80" }}>when connectivity does.</span>
+            {t("educationNeverStops")}<br />
+            <span style={{ color: "#4ade80" }}>{t("offlineToo")}</span>
           </h2>
           <p style={{ color: "#a7c4b5", marginTop: "20px", fontSize: "15px", lineHeight: 1.65, maxWidth: "400px" }}>
-            A complete school management platform that works with or without internet — built for the classrooms that need it most.
+            {t("platformMission")}
           </p>
 
           {/* Feature list — no icon boxes, just clean lines */}
           <div style={{ marginTop: "40px", borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: "32px", display: "flex", flexDirection: "column", gap: "14px" }}>
             {[
-              "Offline-first — all data is available without a connection",
-              "Dropout risk engine that flags at-risk students early",
-              "Auto-syncs to the cloud when connectivity returns",
+              t("offlineFirst"),
+              t("dropoutPrevention"),
+              t("autoSync"),
             ].map((text, i) => (
               <motion.div
                 key={i}
@@ -138,7 +140,7 @@ export default function Login() {
           className="relative z-10"
           style={{ borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: "28px", display: "flex", gap: "40px" }}
         >
-          {[["115+", "Élèves inscrits"], ["5", "Classes actives"], ["15", "Matières"]].map(([val, label]) => (
+          {[["115+", t("studentsEnrolled")], ["5", t("activeClasses")], ["15", t("subjects")]].map(([val, label]) => (
             <div key={label}>
               <p style={{ color: "white", fontSize: "26px", fontWeight: 800, fontFamily: "'Sora', sans-serif", lineHeight: 1 }}>{val}</p>
               <p style={{ color: "#6b9e82", fontSize: "12px", marginTop: "5px", fontWeight: 500 }}>{label}</p>
@@ -172,10 +174,10 @@ export default function Login() {
                 className="text-gray-900"
                 style={{ fontSize: "30px", fontWeight: 800, fontFamily: "'Sora', sans-serif", letterSpacing: "-0.02em", lineHeight: 1.1 }}
               >
-                Welcome back.
+                {t("welcomeBack")}
               </h1>
               <p style={{ color: "#6b7280", marginTop: "8px", fontSize: "14.5px" }}>
-                Sign in to your portal.
+                {t("loginSubtitle")}
               </p>
             </div>
 
@@ -185,7 +187,7 @@ export default function Login() {
                   htmlFor="username"
                   style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#374151", letterSpacing: "0.04em", marginBottom: "7px", textTransform: "uppercase" }}
                 >
-                  Username
+                  {t("username")}
                 </label>
                 <Input
                   id="username"
@@ -206,7 +208,7 @@ export default function Login() {
                   htmlFor="password"
                   style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#374151", letterSpacing: "0.04em", marginBottom: "7px", textTransform: "uppercase" }}
                 >
-                  Password
+                  {t("password")}
                 </label>
                 <div className="relative">
                   <Input
@@ -256,17 +258,17 @@ export default function Login() {
                 {isSubmitting ? (
                   <span style={{ display: "flex", alignItems: "center", gap: "8px", justifyContent: "center" }}>
                     <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Signing in…
+                    {t("loggingIn")}
                   </span>
-                ) : "Sign in →"}
+                ) : `${t("login")} ←`}
               </Button>
             </form>
 
             <p style={{ marginTop: "20px", textAlign: "center", fontSize: "13.5px", color: "#9ca3af" }}>
-              No account?{" "}
+              {t("noAccount")}{" "}
               <Link href="/signup">
                 <span style={{ color: "#166534", fontWeight: 600, cursor: "pointer" }} className="hover:underline">
-                  Request access
+                  {t("requestAccess")}
                 </span>
               </Link>
             </p>
@@ -280,7 +282,7 @@ export default function Login() {
               }}
             >
               <p style={{ fontSize: "11px", fontWeight: 700, color: "#9ca3af", letterSpacing: "0.1em", marginBottom: "14px", textTransform: "uppercase" }}>
-                Demo Access
+                {t("demoAccess")}
               </p>
               <div style={{ display: "flex", flexDirection: "column", gap: "0px", border: "1px solid #e5e7eb", borderRadius: "8px", overflow: "hidden" }}>
                 {DEMO.map((d, i) => (
@@ -315,7 +317,7 @@ export default function Login() {
                           textTransform: "uppercase",
                         }}
                       >
-                        {d.role}
+                        {t(d.role)}
                       </span>
                       <span style={{ fontFamily: "monospace", fontSize: "13px", color: "#374151", fontWeight: 500 }}>{d.user}</span>
                     </div>
@@ -324,7 +326,7 @@ export default function Login() {
                 ))}
               </div>
               <p style={{ fontSize: "11px", color: "#d1d5db", marginTop: "10px", textAlign: "center" }}>
-                Click a row to fill in credentials automatically
+                {t("clickToFill")}
               </p>
             </div>
           </motion.div>

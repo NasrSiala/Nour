@@ -9,39 +9,41 @@ import { Button } from "@/components/ui/button";
 import { OfflineBanner } from "@/components/offline-banner";
 import { SidebarLogo, MobileLogoMark } from "@/components/logo";
 import { NetworkStatusPill } from "@/components/network-status-pill";
-
-const navGroups = [
-  {
-    label: "Overview",
-    items: [
-      { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
-      { name: "Analytics", href: "/admin/analytics", icon: BarChart2 },
-    ],
-  },
-  {
-    label: "Manage",
-    items: [
-      { name: "Users", href: "/admin/users", icon: Users },
-      { name: "Classes", href: "/admin/classes", icon: GraduationCap },
-      { name: "Subjects", href: "/admin/subjects", icon: BookOpen },
-    ],
-  },
-  {
-    label: "Communicate",
-    items: [
-      { name: "Notifications", href: "/admin/notifications", icon: Bell },
-    ],
-  },
-];
+import { useTranslation } from "react-i18next";
 
 const SIDEBAR_BG = "#0B2819";
-const SIDEBAR_ACTIVE_BG = "rgba(255,255,255,0.08)";
-const SIDEBAR_HOVER_BG = "rgba(255,255,255,0.04)";
+const SIDEBAR_ACTIVE_BG = "rgba(255, 255, 255, 0.05)";
+const SIDEBAR_HOVER_BG = "rgba(255, 255, 255, 0.03)";
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
+  const { t } = useTranslation();
   const { user, logout } = useAuth();
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const navGroups = [
+    {
+      label: t("overview"),
+      items: [
+        { name: t("dashboard"), href: "/admin", icon: LayoutDashboard },
+        { name: t("analytics"), href: "/admin/analytics", icon: BarChart2 },
+      ],
+    },
+    {
+      label: t("management"),
+      items: [
+        { name: t("users"), href: "/admin/users", icon: Users },
+        { name: t("classes"), href: "/admin/classes", icon: GraduationCap },
+        { name: t("subjects"), href: "/admin/subjects", icon: BookOpen },
+      ],
+    },
+    {
+      label: t("communication"),
+      items: [
+        { name: t("notifications"), href: "/admin/notifications", icon: Bell },
+      ],
+    },
+  ];
 
   const initials = user?.fullName?.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase() ?? "A";
 
@@ -73,7 +75,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
       >
         {/* Wordmark */}
         <div className="hidden md:flex items-center px-5 py-[22px]" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-          <SidebarLogo portalLabel="Admin Portal" />
+          <SidebarLogo portalLabel={t("adminPortal")} />
         </div>
 
         {/* Nav */}
@@ -122,13 +124,13 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                         <span
                           style={{
                             position: "absolute",
-                            left: 0,
+                            insetInlineStart: 0,
                             top: "50%",
                             transform: "translateY(-50%)",
                             width: "3px",
                             height: "18px",
                             backgroundColor: "#4ade80",
-                            borderRadius: "0 2px 2px 0",
+                            borderRadius: "var(--active-indicator-radius, 0 2px 2px 0)",
                           }}
                         />
                       )}
@@ -190,7 +192,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
               <p style={{ color: "#e2f5ea", fontSize: "12.5px", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {user?.fullName}
               </p>
-              <p style={{ color: "#3d6650", fontSize: "11px", fontWeight: 500 }}>Administrator</p>
+              <p style={{ color: "#3d6650", fontSize: "11px", fontWeight: 500 }}>{t("admin")}</p>
             </div>
           </div>
           <button
@@ -220,7 +222,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             }}
           >
             <LogOut style={{ width: "14px", height: "14px" }} />
-            Sign out
+            {t("logout")}
           </button>
         </div>
       </div>

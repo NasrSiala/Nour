@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "wouter";
 import { ArrowRight, BookOpen } from "lucide-react";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 
 const DARK = "#0B2819";
 
@@ -22,16 +23,17 @@ function attendanceColor(rate: number) {
   return "#ef4444";
 }
 
-function attendanceLabel(rate: number) {
-  if (rate >= 90) return "Excellent";
-  if (rate >= 80) return "Good";
-  if (rate >= 70) return "Needs attention";
-  return "At risk";
+function attendanceLabel(rate: number, t: any) {
+  if (rate >= 90) return t("excellent");
+  if (rate >= 80) return t("good");
+  if (rate >= 70) return t("needsAttention");
+  return t("atRisk");
 }
 
 export default function StudentDashboard() {
+  const { t } = useTranslation();
   const { user } = useAuth();
-  const todayLabel = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+  const todayLabel = new Date().toLocaleDateString("ar-EG", { weekday: "long", day: "numeric", month: "long" });
 
   const { data: students } = useListStudents({}, { query: { queryKey: getListStudentsQueryKey({}) } });
   const studentRecord = students?.find(
@@ -54,7 +56,7 @@ export default function StudentDashboard() {
   const rate = summary?.attendanceRatePct ?? 0;
   const rateColor = attendanceColor(rate);
 
-  const firstName = user?.fullName?.split(" ")[0] ?? "there";
+  const firstName = user?.fullName?.split(" ")[0] ?? t("welcomeBack");
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "28px", paddingBottom: "40px" }}>
@@ -67,14 +69,14 @@ export default function StudentDashboard() {
       >
         <div>
           <h1 style={{ fontSize: "22px", fontWeight: 800, letterSpacing: "-0.02em", color: "#111827", fontFamily: "'Sora', sans-serif", lineHeight: 1.1 }}>
-            Bonjour, {firstName}.
+            {t("bonjour", { name: firstName })}
           </h1>
           <p style={{ fontSize: "13px", color: "#9ca3af", marginTop: "5px" }}>{todayLabel}</p>
         </div>
         <div style={{ display: "flex", gap: "8px" }}>
           {[
-            { label: "My subjects", href: "/student/subjects" },
-            { label: "Attendance record", href: "/student/attendance" },
+            { label: t("mySubjects"), href: "/student/subjects" },
+            { label: t("attendanceRecord"), href: "/student/attendance" },
           ].map(a => (
             <Link key={a.href} href={a.href}>
               <button
@@ -100,7 +102,7 @@ export default function StudentDashboard() {
         <div style={{ backgroundColor: DARK, padding: "26px 26px 22px", position: "relative", overflow: "hidden" }}>
           <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)", backgroundSize: "20px 20px", pointerEvents: "none" }} />
           <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", color: "#4d7a62", textTransform: "uppercase", position: "relative" }}>
-            Attendance Rate
+            {t("attendanceRate")}
           </p>
           {loadingSummary || !studentId ? (
             <Skeleton className="h-12 w-28 mt-2 rounded-lg" style={{ background: "rgba(255,255,255,0.1)" }} />
@@ -110,20 +112,20 @@ export default function StudentDashboard() {
                 {rate}<span style={{ fontSize: "24px", color: "#4d7a62", marginLeft: "1px" }}>%</span>
               </p>
               <p style={{ fontSize: "11px", fontWeight: 700, color: "#4d7a62", marginTop: "10px", position: "relative", letterSpacing: "0.04em", textTransform: "uppercase" }}>
-                {attendanceLabel(rate)}
+                {attendanceLabel(rate, t)}
               </p>
             </>
           )}
           <Link href="/student/attendance">
             <button style={{ display: "inline-flex", alignItems: "center", gap: "6px", marginTop: "14px", fontSize: "12px", fontWeight: 600, color: "#4ade80", background: "none", border: "none", cursor: "pointer", padding: 0, position: "relative" }}>
-              Full record <ArrowRight style={{ width: "11px", height: "11px" }} />
+              {t("fullRecord")} <ArrowRight style={{ width: "11px", height: "11px" }} />
             </button>
           </Link>
         </div>
 
         {/* Present */}
         <div style={{ padding: "26px 18px 22px", backgroundColor: "white", borderLeft: "1px solid #f3f4f6" }}>
-          <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", color: "#9ca3af", textTransform: "uppercase" }}>Present</p>
+          <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", color: "#9ca3af", textTransform: "uppercase" }}>{t("present")}</p>
           {loadingSummary || !studentId ? (
             <Skeleton className="h-10 w-12 mt-3 rounded-lg" />
           ) : (
@@ -131,12 +133,12 @@ export default function StudentDashboard() {
               {summary?.present ?? 0}
             </p>
           )}
-          <p style={{ fontSize: "11px", color: "#d1d5db", marginTop: "8px" }}>days</p>
+          <p style={{ fontSize: "11px", color: "#d1d5db", marginTop: "8px" }}>{t("days")}</p>
         </div>
 
         {/* Absent */}
         <div style={{ padding: "26px 18px 22px", backgroundColor: "white", borderLeft: "1px solid #f3f4f6" }}>
-          <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", color: "#9ca3af", textTransform: "uppercase" }}>Absent</p>
+          <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", color: "#9ca3af", textTransform: "uppercase" }}>{t("absent")}</p>
           {loadingSummary || !studentId ? (
             <Skeleton className="h-10 w-12 mt-3 rounded-lg" />
           ) : (
@@ -144,12 +146,12 @@ export default function StudentDashboard() {
               {summary?.absent ?? 0}
             </p>
           )}
-          <p style={{ fontSize: "11px", color: "#d1d5db", marginTop: "8px" }}>days</p>
+          <p style={{ fontSize: "11px", color: "#d1d5db", marginTop: "8px" }}>{t("days")}</p>
         </div>
 
         {/* Late */}
         <div style={{ padding: "26px 18px 22px", backgroundColor: "white", borderLeft: "1px solid #f3f4f6" }}>
-          <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", color: "#9ca3af", textTransform: "uppercase" }}>Late</p>
+          <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", color: "#9ca3af", textTransform: "uppercase" }}>{t("late")}</p>
           {loadingSummary || !studentId ? (
             <Skeleton className="h-10 w-12 mt-3 rounded-lg" />
           ) : (
@@ -157,12 +159,12 @@ export default function StudentDashboard() {
               {summary?.late ?? 0}
             </p>
           )}
-          <p style={{ fontSize: "11px", color: "#d1d5db", marginTop: "8px" }}>days</p>
+          <p style={{ fontSize: "11px", color: "#d1d5db", marginTop: "8px" }}>{t("days")}</p>
         </div>
 
         {/* Excused */}
         <div style={{ padding: "26px 18px 22px", backgroundColor: "white", borderLeft: "1px solid #f3f4f6" }}>
-          <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", color: "#9ca3af", textTransform: "uppercase" }}>Excused</p>
+          <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", color: "#9ca3af", textTransform: "uppercase" }}>{t("excused")}</p>
           {loadingSummary || !studentId ? (
             <Skeleton className="h-10 w-12 mt-3 rounded-lg" />
           ) : (
@@ -170,7 +172,7 @@ export default function StudentDashboard() {
               {summary?.excused ?? 0}
             </p>
           )}
-          <p style={{ fontSize: "11px", color: "#d1d5db", marginTop: "8px" }}>days</p>
+          <p style={{ fontSize: "11px", color: "#d1d5db", marginTop: "8px" }}>{t("days")}</p>
         </div>
       </motion.div>
 
@@ -182,14 +184,14 @@ export default function StudentDashboard() {
         style={{ backgroundColor: "white", borderRadius: "16px", border: "1px solid #e5e7eb", overflow: "hidden" }}
       >
         <div style={{ padding: "20px 22px 16px", borderBottom: "1px solid #f9fafb", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <p style={{ fontSize: "14px", fontWeight: 700, color: "#111827", fontFamily: "'Sora', sans-serif" }}>My Subjects</p>
+          <p style={{ fontSize: "14px", fontWeight: 700, color: "#111827", fontFamily: "'Sora', sans-serif" }}>{t("mySubjects")}</p>
           <Link href="/student/subjects">
             <button
               style={{ fontSize: "11px", fontWeight: 600, color: "#9ca3af", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
               onMouseEnter={e => (e.currentTarget.style.color = DARK)}
               onMouseLeave={e => (e.currentTarget.style.color = "#9ca3af")}
             >
-              All subjects <ArrowRight style={{ width: "10px", height: "10px" }} />
+              {t("allSubjects")} <ArrowRight style={{ width: "10px", height: "10px" }} />
             </button>
           </Link>
         </div>
@@ -200,7 +202,7 @@ export default function StudentDashboard() {
           </div>
         ) : classSubjects.length === 0 ? (
           <div style={{ padding: "40px", textAlign: "center", color: "#d1d5db", fontSize: "13px" }}>
-            No subjects assigned yet
+            {t("noSubjectsAssigned")}
           </div>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0" }}>

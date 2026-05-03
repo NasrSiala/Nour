@@ -45,6 +45,7 @@ import {
   X,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -70,6 +71,7 @@ const ALLOWED_TYPES: Record<string, string[]> = {
 };
 
 function FileUploadButton({ lesson, onDone }: { lesson: Lesson; onDone: () => void }) {
+  const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { uploadFile, isUploading, progress } = useUpload({
@@ -84,14 +86,14 @@ function FileUploadButton({ lesson, onDone }: { lesson: Lesson; onDone: () => vo
             fileName: response.metadata.name,
           }),
         });
-        toast({ title: "File uploaded successfully" });
+        toast({ title: t("fileUploaded") });
         onDone();
       } catch {
-        toast({ title: "Failed to save file reference", variant: "destructive" });
+        toast({ title: t("failedToSaveFile"), variant: "destructive" });
       }
     },
     onError: () => {
-      toast({ title: "Upload failed", variant: "destructive" });
+      toast({ title: t("uploadFailed"), variant: "destructive" });
     },
   });
 
@@ -112,7 +114,7 @@ function FileUploadButton({ lesson, onDone }: { lesson: Lesson; onDone: () => vo
       />
       {isUploading ? (
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span className="shrink-0">Uploading…</span>
+          <span className="shrink-0">{t("uploading")}</span>
           <Progress value={progress} className="h-1.5 flex-1" />
           <span className="shrink-0">{progress}%</span>
         </div>
@@ -124,7 +126,7 @@ function FileUploadButton({ lesson, onDone }: { lesson: Lesson; onDone: () => vo
           onClick={() => inputRef.current?.click()}
         >
           <Upload className="h-3 w-3" />
-          {lesson.fileUrl ? "Replace file" : "Attach file"}
+          {lesson.fileUrl ? t("replaceFile") : t("attachFile")}
         </Button>
       )}
     </div>
@@ -132,6 +134,7 @@ function FileUploadButton({ lesson, onDone }: { lesson: Lesson; onDone: () => vo
 }
 
 function LessonList({ subjectId }: { subjectId: number }) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { data: lessons, isLoading } = useListLessons(subjectId, {
     query: { queryKey: getListLessonsQueryKey(subjectId) },
@@ -145,7 +148,7 @@ function LessonList({ subjectId }: { subjectId: number }) {
   if (!lessons?.length) {
     return (
       <p className="text-sm text-muted-foreground py-3 text-center italic">
-        No lessons yet — add the first one.
+        {t("noLessonsYet")}
       </p>
     );
   }
@@ -181,7 +184,7 @@ function LessonList({ subjectId }: { subjectId: number }) {
                 {lesson.durationMinutes && (
                   <span className="flex items-center gap-1 text-xs text-muted-foreground">
                     <Clock className="h-3 w-3" />
-                    {lesson.durationMinutes}m
+                    {lesson.durationMinutes}{t("m") || "m"}
                   </span>
                 )}
                 {lesson.fileUrl && (
@@ -192,7 +195,7 @@ function LessonList({ subjectId }: { subjectId: number }) {
                     className="flex items-center gap-1 text-xs text-primary hover:underline"
                   >
                     <Download className="h-3 w-3" />
-                    Open
+                    {t("open")}
                   </a>
                 )}
               </div>
@@ -208,6 +211,7 @@ function LessonList({ subjectId }: { subjectId: number }) {
 }
 
 function AddLessonDialog({ subjectId, subjectName }: { subjectId: number; subjectName: string }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -234,14 +238,14 @@ function AddLessonDialog({ subjectId, subjectName }: { subjectId: number; subjec
       });
       queryClient.invalidateQueries({ queryKey: getListLessonsQueryKey(subjectId) });
       queryClient.invalidateQueries({ queryKey: getListSubjectsQueryKey({}) });
-      toast({ title: "Lesson added — you can now attach a file to it" });
+      toast({ title: t("lessonAddedDesc") });
       setTitle("");
       setDescription("");
       setDuration("");
       setFileType("html");
       setOpen(false);
     } catch {
-      toast({ title: "Failed to add lesson", variant: "destructive" });
+      toast({ title: t("failedToSaveLesson"), variant: "destructive" });
     }
   };
 
@@ -250,16 +254,16 @@ function AddLessonDialog({ subjectId, subjectName }: { subjectId: number; subjec
       <DialogTrigger asChild>
         <Button size="sm" variant="outline" className="h-8 gap-1.5">
           <Plus className="h-3.5 w-3.5" />
-          Add Lesson
+          {t("addLesson")}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Add Lesson to {subjectName}</DialogTitle>
+          <DialogTitle>{t("addLesson")} - {subjectName}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-2">
           <div className="space-y-1.5">
-            <Label htmlFor="lesson-title">Title *</Label>
+            <Label htmlFor="lesson-title">{t("lessonTitle")} *</Label>
             <Input
               id="lesson-title"
               placeholder="e.g. Introduction to Algebra"
@@ -269,10 +273,10 @@ function AddLessonDialog({ subjectId, subjectName }: { subjectId: number; subjec
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="lesson-desc">Description</Label>
+            <Label htmlFor="lesson-desc">{t("description")}</Label>
             <Textarea
               id="lesson-desc"
-              placeholder="What will students learn in this lesson?"
+              placeholder={t("lessonDescPlaceholder") || "What will students learn?"}
               value={description}
               onChange={e => setDescription(e.target.value)}
               rows={3}
@@ -280,21 +284,21 @@ function AddLessonDialog({ subjectId, subjectName }: { subjectId: number; subjec
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label>Content Type</Label>
+              <Label>{t("contentType")}</Label>
               <Select value={fileType} onValueChange={v => setFileType(v as typeof fileType)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="html">Notes / HTML</SelectItem>
-                  <SelectItem value="pdf">PDF Document</SelectItem>
-                  <SelectItem value="video">Video</SelectItem>
-                  <SelectItem value="audio">Audio</SelectItem>
+                  <SelectItem value="html">{t("notesHtml")}</SelectItem>
+                  <SelectItem value="pdf">{t("pdfDocument")}</SelectItem>
+                  <SelectItem value="video">{t("video")}</SelectItem>
+                  <SelectItem value="audio">{t("audio")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="lesson-duration">Duration (min)</Label>
+              <Label htmlFor="lesson-duration">{t("durationMin")}</Label>
               <Input
                 id="lesson-duration"
                 type="number"
@@ -308,12 +312,12 @@ function AddLessonDialog({ subjectId, subjectName }: { subjectId: number; subjec
           </div>
           <p className="text-xs text-muted-foreground flex items-center gap-1.5">
             <Upload className="h-3 w-3" />
-            After creating, you can attach a file directly on the lesson card.
+            {t("afterCreatingAttach")}
           </p>
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button type="button" variant="ghost" onClick={() => setOpen(false)}>{t("cancel")}</Button>
             <Button type="submit" disabled={!title.trim() || createLesson.isPending}>
-              {createLesson.isPending ? "Adding…" : "Add Lesson"}
+              {createLesson.isPending ? t("adding") : t("addLesson")}
             </Button>
           </div>
         </form>
@@ -323,6 +327,7 @@ function AddLessonDialog({ subjectId, subjectName }: { subjectId: number; subjec
 }
 
 export default function TeacherContent() {
+  const { t } = useTranslation();
   const [expandedSubject, setExpandedSubject] = useState<number | null>(null);
   const [search, setSearch] = useState("");
 
@@ -342,16 +347,16 @@ export default function TeacherContent() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Content Library</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">Add lessons and attach files — students access them instantly</p>
+          <h1 className="text-2xl font-bold tracking-tight">{t("contentLibrary")}</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">{t("contentLibraryDesc")}</p>
         </div>
         <div className="flex gap-3 shrink-0">
           <div className="text-center px-4 py-2 rounded-xl bg-primary/8 border border-primary/15">
-            <p className="text-xs text-muted-foreground">Subjects</p>
+            <p className="text-xs text-muted-foreground">{t("subjects")}</p>
             <p className="text-lg font-bold text-primary">{subjects?.length ?? 0}</p>
           </div>
           <div className="text-center px-4 py-2 rounded-xl bg-primary/8 border border-primary/15">
-            <p className="text-xs text-muted-foreground">Lessons</p>
+            <p className="text-xs text-muted-foreground">{t("lessons")}</p>
             <p className="text-lg font-bold text-primary">{totalLessons}</p>
           </div>
         </div>
@@ -361,7 +366,7 @@ export default function TeacherContent() {
       <div className="relative">
         <BookOpen className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Search subjects…"
+          placeholder={t("searchSubjects")}
           className="pl-9 rounded-xl"
           value={search}
           onChange={e => setSearch(e.target.value)}
@@ -375,7 +380,7 @@ export default function TeacherContent() {
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 rounded-2xl border border-dashed border-border bg-muted/20 text-muted-foreground">
           <BookOpen className="h-10 w-10 mx-auto mb-3 opacity-25" />
-          <p className="font-medium">No subjects found</p>
+          <p className="font-medium">{t("noSubjectsFound")}</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -402,7 +407,7 @@ export default function TeacherContent() {
                         {subject.name}
                       </p>
                       <p className="text-[11px] text-muted-foreground mt-0.5 font-medium">
-                        Grade {subject.gradeLevel}
+                        {t("grade")} {subject.gradeLevel}
                         <span className="mx-1.5 opacity-30">·</span>
                         <span className="font-mono">{subject.code}</span>
                         {subject.description && (
@@ -418,7 +423,7 @@ export default function TeacherContent() {
                   <div className="flex items-center gap-2 shrink-0">
                     <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground bg-muted/60 px-2.5 py-1 rounded-lg">
                       <FileText className="h-3 w-3" />
-                      {subject.lessonCount} lesson{subject.lessonCount !== 1 ? "s" : ""}
+                      {subject.lessonCount} {t("lesson")}{subject.lessonCount !== 1 ? t("s") || "" : ""}
                     </span>
                     <AddLessonDialog subjectId={subject.id} subjectName={subject.name} />
                   </div>
