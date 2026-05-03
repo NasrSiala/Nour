@@ -40,7 +40,7 @@ router.get("/attendance/sessions", requireAuth, async (req, res): Promise<void> 
   const { classId, sessionDate } = req.query;
   const conditions = [];
   if (classId) conditions.push(eq(attendanceSessionsTable.classId, Number(classId)));
-  if (sessionDate && typeof sessionDate === "string") conditions.push(eq(attendanceSessionsTable.sessionDate, sessionDate));
+  if (sessionDate && typeof sessionDate === "string") conditions.push(eq(attendanceSessionsTable.sessionDate, new Date(sessionDate)));
 
   const sessions = conditions.length > 0
     ? await db.select().from(attendanceSessionsTable).where(and(...conditions))
@@ -61,6 +61,7 @@ router.post("/attendance/sessions", requireAuth, async (req, res): Promise<void>
 
   const [result] = await db.insert(attendanceSessionsTable).values({
     ...parsed.data,
+    sessionDate: new Date(parsed.data.sessionDate),
     teacherId: user.userId,
   });
 
@@ -189,7 +190,7 @@ router.get("/attendance/classes/:classId/sheet", requireAuth, async (req, res): 
   }
 
   const sessions = await db.select().from(attendanceSessionsTable)
-    .where(and(eq(attendanceSessionsTable.classId, classId), eq(attendanceSessionsTable.sessionDate, sessionDate)));
+    .where(and(eq(attendanceSessionsTable.classId, classId), eq(attendanceSessionsTable.sessionDate, new Date(sessionDate))));
 
   const detailedSessions = await Promise.all(sessions.map(async session => {
     const records = await db.select().from(attendanceRecordsTable).where(eq(attendanceRecordsTable.sessionId, session.id));

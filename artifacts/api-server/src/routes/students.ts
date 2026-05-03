@@ -58,7 +58,8 @@ router.post("/students", requireAuth, async (req, res): Promise<void> => {
 
   const [result] = await db.insert(studentsTable).values({
     ...parsed.data,
-    enrollmentDate: new Date().toISOString().split("T")[0],
+    dateOfBirth: parsed.data.dateOfBirth ? new Date(parsed.data.dateOfBirth) : null,
+    enrollmentDate: new Date(),
   });
 
   const [student] = await db.select().from(studentsTable).where(eq(studentsTable.id, result.insertId));
@@ -96,7 +97,11 @@ router.patch("/students/:id", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
-  await db.update(studentsTable).set(parsed.data).where(eq(studentsTable.id, id));
+  const updateData = {
+    ...parsed.data,
+    dateOfBirth: parsed.data.dateOfBirth ? new Date(parsed.data.dateOfBirth) : undefined,
+  };
+  await db.update(studentsTable).set(updateData).where(eq(studentsTable.id, id));
   
   const [student] = await db.select().from(studentsTable).where(eq(studentsTable.id, id));
   if (!student) {

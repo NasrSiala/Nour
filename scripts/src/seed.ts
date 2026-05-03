@@ -1,4 +1,5 @@
 import { db, usersTable, classesTable, studentsTable, subjectsTable, lessonsTable, attendanceSessionsTable, attendanceRecordsTable, riskScoresTable, riskAlertsTable, notificationsTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
 import crypto from "crypto";
 
 function hashPassword(password: string): string {
@@ -32,13 +33,14 @@ async function seed() {
   await db.delete(usersTable);
 
   // Create admin
-  const [admin] = await db.insert(usersTable).values({
+  const [adminRes] = await db.insert(usersTable).values({
     username: "admin",
     fullName: "Directeur Rachid Mansouri",
     hashedPassword: hashPassword("admin123"),
     role: "admin",
     isActive: true,
-  }).returning();
+  });
+  const [admin] = await db.select().from(usersTable).where(eq(usersTable.id, adminRes.insertId));
   console.log("Created admin:", admin.username);
 
   // Create teachers
@@ -49,15 +51,17 @@ async function seed() {
     { username: "teacher4", fullName: "M. Hichem Nasr", password: "teacher123" },
   ];
 
-  const teachers = await Promise.all(teacherData.map(t =>
-    db.insert(usersTable).values({
+  const teachers = await Promise.all(teacherData.map(async t => {
+    const [res] = await db.insert(usersTable).values({
       username: t.username,
       fullName: t.fullName,
       hashedPassword: hashPassword(t.password),
       role: "teacher",
       isActive: true,
-    }).returning().then(r => r[0])
-  ));
+    });
+    const [teacher] = await db.select().from(usersTable).where(eq(usersTable.id, res.insertId));
+    return teacher;
+  }));
   console.log("Created teachers:", teachers.length);
 
   // Create classes
@@ -69,9 +73,11 @@ async function seed() {
     { name: "6ème A", gradeLevel: 6, homeroomTeacherId: teachers[0].id, academicYear: "2025-2026" },
   ];
 
-  const classes = await Promise.all(classData.map(c =>
-    db.insert(classesTable).values(c).returning().then(r => r[0])
-  ));
+  const classes = await Promise.all(classData.map(async c => {
+    const [res] = await db.insert(classesTable).values(c);
+    const [cls] = await db.select().from(classesTable).where(eq(classesTable.id, res.insertId));
+    return cls;
+  }));
   console.log("Created classes:", classes.length);
 
   // Update teachers with classId
@@ -93,18 +99,19 @@ async function seed() {
       const gender = i % 2 === 0 ? "male" : "female";
       const dob = new Date(2010 + Math.floor(Math.random() * 4), Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1);
 
-      const [student] = await db.insert(studentsTable).values({
+      const [res] = await db.insert(studentsTable).values({
         firstName,
         lastName,
         gender,
-        dateOfBirth: dob.toISOString().split("T")[0],
+        dateOfBirth: dob,
         parentPhone: `+216${Math.floor(20000000 + Math.random() * 79999999)}`,
         parentName: `Parent de ${firstName} ${lastName}`,
         classId: cls.id,
         isActive: true,
-        enrollmentDate: "2025-09-01",
-      }).returning();
+        enrollmentDate: new Date("2025-09-01"),
+      });
 
+      const [student] = await db.select().from(studentsTable).where(eq(studentsTable.id, res.insertId));
       allStudents.push(student);
     }
   }
@@ -129,9 +136,11 @@ async function seed() {
     { code: "PHILO-6", name: "Philosophie", gradeLevel: 6, description: "Initiation à la pensée philosophique" },
   ];
 
-  const subjects = await Promise.all(subjectData.map(s =>
-    db.insert(subjectsTable).values({ ...s, isActive: true }).returning().then(r => r[0])
-  ));
+  const subjects = await Promise.all(subjectData.map(async s => {
+    const [res] = await db.insert(subjectsTable).values({ ...s, isActive: true });
+    const [subject] = await db.select().from(subjectsTable).where(eq(subjectsTable.id, res.insertId));
+    return subject;
+  }));
   console.log("Created subjects:", subjects.length);
 
   // Create lessons
@@ -185,13 +194,14 @@ async function seed() {
   for (const cls of classes.slice(0, 3)) { // First 3 classes get full history
     const classStudents = classStudentMap.get(cls.id) ?? [];
     for (const dateStr of sessionDates.slice(-20)) { // Last 20 school days
-      const [session] = await db.insert(attendanceSessionsTable).values({
+      const [res] = await db.insert(attendanceSessionsTable).values({
         classId: cls.id,
         teacherId: cls.homeroomTeacherId ?? teachers[0].id,
-        sessionDate: dateStr,
+        sessionDate: new Date(dateStr),
         period: 1,
         isLocked: true,
-      }).returning();
+      });
+      const [session] = await db.select().from(attendanceSessionsTable).where(eq(attendanceSessionsTable.id, res.insertId));
 
       let prevHash = "GENESIS";
       for (const student of classStudents) {
@@ -249,7 +259,7 @@ async function seed() {
       explanation.push("Attendance patterns are within normal range");
     }
 
-    const [riskScore] = await db.insert(riskScoresTable).values({
+    const [res] = await db.insert(riskScoresTable).values({
       studentId: student.id,
       classId: student.classId,
       score,
@@ -260,7 +270,8 @@ async function seed() {
         totalRecentSessions: 22,
       },
       explanationJson: explanation,
-    }).returning();
+    });
+    const [riskScore] = await db.select().from(riskScoresTable).where(eq(riskScoresTable.id, res.insertId));
 
     // Create alerts for high/critical risk students
     if (tier === "high" || tier === "critical") {

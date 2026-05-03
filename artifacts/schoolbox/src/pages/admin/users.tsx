@@ -173,7 +173,7 @@ export default function UserManagement() {
           <Search className="absolute inline-start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder={t("searchPlaceholder")}
-            className="ps-9 rounded-xl text-inline-start"
+            className="ps-9 rounded-xl text-start"
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
@@ -200,14 +200,14 @@ export default function UserManagement() {
               {[1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}
             </div>
           ) : (
-            <div className="overflow-x-auto text-inline-start">
+            <div className="overflow-x-auto text-start">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border bg-muted/30">
-                    <th className="px-5 py-3.5 text-inline-start text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t("fullName")}</th>
-                    <th className="px-5 py-3.5 text-inline-start text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t("username")}</th>
-                    <th className="px-5 py-3.5 text-inline-start text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t("role")}</th>
-                    <th className="px-5 py-3.5 text-inline-start text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t("status")}</th>
+                    <th className="px-5 py-3.5 text-start text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t("fullName")}</th>
+                    <th className="px-5 py-3.5 text-start text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t("username")}</th>
+                    <th className="px-5 py-3.5 text-start text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t("role")}</th>
+                    <th className="px-5 py-3.5 text-start text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t("status")}</th>
                     <th className="px-5 py-3.5 text-inline-end text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t("actions")}</th>
                   </tr>
                 </thead>

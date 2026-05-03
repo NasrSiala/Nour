@@ -6,6 +6,9 @@ type SendNotificationBody = {
   lang: "fr" | "ar";
   customMessage?: string | null;
 };
+
+type TemplateKey = SendNotificationBody["templateKey"];
+type Lang = SendNotificationBody["lang"];
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -106,7 +109,7 @@ export default function AdminNotifications() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="text-inline-start">
+      <div className="text-start">
         <h1 className="text-3xl font-bold tracking-tight text-gray-900">{t("parentNotifications")}</h1>
         <p className="text-muted-foreground">{t("manageNotificationsSubtitle")}</p>
       </div>
@@ -135,13 +138,13 @@ export default function AdminNotifications() {
       {/* Compose */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-base text-inline-start">
+          <CardTitle className="flex items-center gap-2 text-base text-start">
             <Bell className="h-4 w-4 text-primary" />
             {t("sendNotification")}
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end text-inline-start">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end text-start">
             <div className="space-y-1.5">
               <Label>{t("student")}</Label>
               <Select value={selectedStudentId} onValueChange={setSelectedStudentId}>
@@ -211,7 +214,7 @@ export default function AdminNotifications() {
 
       {/* Notification Log */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-3 text-inline-start">
+        <CardHeader className="flex flex-row items-center justify-between pb-3 text-start">
           <CardTitle className="text-base">{t("notificationLog")}</CardTitle>
           <Select value={filterStatus} onValueChange={setFilterStatus}>
             <SelectTrigger className="w-36 h-8 text-xs">
@@ -230,14 +233,14 @@ export default function AdminNotifications() {
             <div className="space-y-2">{[1,2,3,4,5].map(i => <Skeleton key={i} className="h-10" />)}</div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm text-inline-start">
+              <table className="w-full text-sm text-start">
                 <thead className="bg-gray-50 text-gray-600 text-xs uppercase tracking-wider">
                   <tr>
-                    <th className="px-4 py-3 text-inline-start">{t("student")}</th>
-                    <th className="px-4 py-3 text-inline-start">{t("template")}</th>
-                    <th className="px-4 py-3 text-inline-start">{t("language")}</th>
-                    <th className="px-4 py-3 text-inline-start">{t("status")}</th>
-                    <th className="px-4 py-3 text-inline-start">{t("date")}</th>
+                    <th className="px-4 py-3 text-start">{t("student")}</th>
+                    <th className="px-4 py-3 text-start">{t("template")}</th>
+                    <th className="px-4 py-3 text-start">{t("language")}</th>
+                    <th className="px-4 py-3 text-start">{t("status")}</th>
+                    <th className="px-4 py-3 text-start">{t("date")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">

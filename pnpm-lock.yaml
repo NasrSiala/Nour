@@ -607,6 +607,12 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 25.3.5
+      '@workspace/db':
+        specifier: workspace:*
+        version: link:../lib/db
+      drizzle-orm:
+        specifier: 'catalog:'
+        version: 0.45.2(mysql2@3.22.3(@types/node@25.3.5))
       tsx:
         specifier: 'catalog:'
         version: 4.21.0

@@ -328,7 +328,7 @@ export default function AdminDashboard() {
             <thead>
               <tr style={{ borderBottom: "1px solid #f3f4f6" }}>
                 {["#", t("student"), t("class"), t("riskScore"), t("tier"), t("keyFactor")].map(h => (
-                  <th key={h} style={{ padding: "10px 20px", textAlign: "inline-start", fontSize: "10px", fontWeight: 700, color: "#d1d5db", letterSpacing: "0.08em", textTransform: "uppercase", whiteSpace: "nowrap" }}>
+                  <th key={h} style={{ padding: "10px 20px", textAlign: "start", fontSize: "10px", fontWeight: 700, color: "#d1d5db", letterSpacing: "0.08em", textTransform: "uppercase", whiteSpace: "nowrap" }}>
                     {h}
                   </th>
                 ))}

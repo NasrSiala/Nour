@@ -25,14 +25,14 @@ export default function AdminAnalytics() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="text-inline-start">
+      <div className="text-start">
         <h1 className="text-3xl font-bold tracking-tight text-gray-900">{t("analyticsTitle")}</h1>
         <p className="text-muted-foreground">{t("analyticsSubtitle")}</p>
       </div>
 
       {/* Attendance Trend */}
       <Card>
-        <CardHeader className="text-inline-start">
+        <CardHeader className="text-start">
           <CardTitle>{t("attendanceTrend16w")}</CardTitle>
         </CardHeader>
         <CardContent className="h-[280px]">
@@ -55,7 +55,7 @@ export default function AdminAnalytics() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Risk by Class */}
         <Card>
-          <CardHeader className="text-inline-start">
+          <CardHeader className="text-start">
             <CardTitle>{t("riskDistributionByClass")}</CardTitle>
           </CardHeader>
           <CardContent className="h-[280px]">
@@ -79,7 +79,7 @@ export default function AdminAnalytics() {
 
         {/* Content Engagement Radar */}
         <Card>
-          <CardHeader className="text-inline-start">
+          <CardHeader className="text-start">
             <CardTitle>{t("contentEngagementBySubject")}</CardTitle>
           </CardHeader>
           <CardContent className="h-[280px]">
@@ -101,7 +101,7 @@ export default function AdminAnalytics() {
 
       {/* Class Risk Summary Cards */}
       {!loadingRisk && riskByClass && (
-        <div className="text-inline-start">
+        <div className="text-start">
           <h2 className="text-lg font-semibold mb-3">{t("classRiskSummary")}</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {riskByClass.map(cls => {
@@ -139,7 +139,7 @@ export default function AdminAnalytics() {
 
       {/* Top At-Risk Table */}
       <Card>
-        <CardHeader className="text-inline-start">
+        <CardHeader className="text-start">
           <CardTitle>{t("topAtRiskStudents20")}</CardTitle>
         </CardHeader>
         <CardContent>
@@ -147,16 +147,16 @@ export default function AdminAnalytics() {
             <div className="space-y-2">{[1,2,3,4,5].map(i => <Skeleton key={i} className="h-10" />)}</div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm text-inline-start">
+              <table className="w-full text-sm text-start">
                 <thead className="bg-gray-50 text-gray-600 text-xs uppercase tracking-wider">
                   <tr>
-                    <th className="px-4 py-3 text-inline-start">#</th>
-                    <th className="px-4 py-3 text-inline-start">{t("student")}</th>
-                    <th className="px-4 py-3 text-inline-start">{t("class")}</th>
-                    <th className="px-4 py-3 text-inline-start">{t("status")}</th>
-                    <th className="px-4 py-3 text-inline-start">{t("tier")}</th>
-                    <th className="px-4 py-3 text-inline-start">{t("consecutiveAbsences")}</th>
-                    <th className="px-4 py-3 text-inline-start">{t("keyFactor")}</th>
+                    <th className="px-4 py-3 text-start">#</th>
+                    <th className="px-4 py-3 text-start">{t("student")}</th>
+                    <th className="px-4 py-3 text-start">{t("class")}</th>
+                    <th className="px-4 py-3 text-start">{t("status")}</th>
+                    <th className="px-4 py-3 text-start">{t("tier")}</th>
+                    <th className="px-4 py-3 text-start">{t("consecutiveAbsences")}</th>
+                    <th className="px-4 py-3 text-start">{t("keyFactor")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">

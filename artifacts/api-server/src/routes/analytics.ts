@@ -30,7 +30,7 @@ router.get("/analytics/kpis", requireAuth, requireRole("admin", "teacher"), asyn
       GROUP BY student_id
     ) latest ON rs.student_id = latest.student_id AND rs.computed_at = latest.max_at
   `);
-  const scores = (result[0] as any[]) as { student_id: number; tier: string; score: number }[];
+  const scores = (result[0] as unknown) as { student_id: number; tier: string; score: number }[];
   const atRiskCount = scores.filter(s => s.tier === "high" || s.tier === "critical").length;
   const atRiskPct = Number(activeStudents.count) > 0 ? Math.round(atRiskCount / Number(activeStudents.count) * 1000) / 10 : 0;
 
@@ -39,7 +39,7 @@ router.get("/analytics/kpis", requireAuth, requireRole("admin", "teacher"), asyn
     .where(and(eq(notificationsTable.status, "sent"), gte(notificationsTable.createdAt, thirtyDaysAgo)));
 
   const allAlerts = await db.execute(sql`SELECT acknowledged_at FROM risk_alerts WHERE triggered_at >= ${thirtyDaysAgo}`);
-  const alertRows = (allAlerts[0] as any[]) as { acknowledged_at: Date | null }[];
+  const alertRows = (allAlerts[0] as unknown) as { acknowledged_at: Date | null }[];
   const acknowledgedRate = alertRows.length > 0
     ? Math.round(alertRows.filter(a => a.acknowledged_at != null).length / alertRows.length * 1000) / 10
     : 100;
@@ -131,7 +131,7 @@ router.get("/analytics/risk-by-class", requireAuth, requireRole("admin", "teache
       GROUP BY student_id
     ) latest ON rs.student_id = latest.student_id AND rs.computed_at = latest.max_at
   `);
-  const riskRows = (riskStats[0] as any[]) as { class_id: number; tier: string; score: number; student_id: number }[];
+  const riskRows = (riskStats[0] as unknown) as { class_id: number; tier: string; score: number; student_id: number }[];
 
   const results = classes.map(cls => {
     const classRiskRows = riskRows.filter(r => r.class_id === cls.id);
@@ -180,7 +180,7 @@ router.get("/analytics/top-at-risk", requireAuth, requireRole("admin", "teacher"
     LIMIT ${limit}
   `);
   
-  const rows = (scores[0] as any[]);
+  const rows = (scores[0] as unknown) as any[];
 
   const results = rows.map(row => {
     const maskedPhone = row.parent_phone

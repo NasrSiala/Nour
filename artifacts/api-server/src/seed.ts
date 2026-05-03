@@ -1,4 +1,5 @@
 import { db, usersTable, classesTable, studentsTable, subjectsTable, lessonsTable, attendanceSessionsTable, attendanceRecordsTable, riskScoresTable, riskAlertsTable, notificationsTable, type Class } from "@workspace/db";
+import { eq } from "drizzle-orm";
 import crypto from "crypto";
 
 function hashPassword(password: string): string {
@@ -97,12 +98,12 @@ async function seed() {
         firstName,
         lastName,
         gender,
-        dateOfBirth: `${year}-${month}-${day}`,
+        dateOfBirth: new Date(`${year}-${month}-${day}`),
         parentPhone: `+21620${String(Math.floor(Math.random() * 1000000)).padStart(6, "0")}`,
         parentName: `ولي أمر ${firstName} ${lastName}`,
         classId: cls.id,
         isActive: true,
-        enrollmentDate: "2025-09-01",
+        enrollmentDate: new Date("2025-09-01"),
       });
       allStudents.push({ id: res.insertId, firstName, lastName, classId: cls.id });
     }
@@ -172,7 +173,7 @@ async function seed() {
       const [sessionRes] = await db.insert(attendanceSessionsTable).values({
         classId: cls.id,
         teacherId: cls.homeroomTeacherId ?? teachers[0].id,
-        sessionDate: dateStr,
+        sessionDate: new Date(dateStr),
         period: 1,
         isLocked: true,
       });

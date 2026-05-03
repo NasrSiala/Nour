@@ -76,7 +76,7 @@ export default function AdminClasses() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div className="text-inline-start">
+        <div className="text-start">
           <h1 className="text-2xl font-bold tracking-tight">{t("classesTitle")}</h1>
           <p className="text-muted-foreground">{classes?.length ?? 0} {t("totalClasses")}</p>
         </div>
@@ -89,7 +89,7 @@ export default function AdminClasses() {
         <div className="space-y-4">{[1, 2].map(i => <Skeleton key={i} className="h-32 rounded-xl" />)}</div>
       ) : (
         Object.entries(byGrade).sort(([a], [b]) => Number(a) - Number(b)).map(([grade, gradeClasses]) => (
-          <div key={grade} className="text-inline-start">
+          <div key={grade} className="text-start">
             <div className="flex items-center gap-2 mb-3">
               <GraduationCap className="h-4 w-4 text-primary" />
               <h2 className="font-semibold text-sm">{t("grade")} {grade}</h2>
@@ -101,7 +101,7 @@ export default function AdminClasses() {
                   <Card data-testid={`class-card-${cls.id}`}>
                     <CardContent className="pt-5 pb-5">
                       <div className="flex items-start justify-between">
-                        <div className="text-inline-start">
+                        <div className="text-start">
                           <p className="font-semibold">{cls.name}</p>
                           <p className="text-xs text-muted-foreground mt-0.5">{cls.academicYear}</p>
                         </div>
@@ -132,16 +132,16 @@ export default function AdminClasses() {
 
       <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { reset(); setTeacherId(""); } }}>
         <DialogContent>
-          <DialogHeader className="text-inline-start">
+          <DialogHeader className="text-start">
             <DialogTitle>{t("createClass")}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-1.5 text-inline-start">
+            <div className="space-y-1.5 text-start">
               <Label>{t("className")}</Label>
               <Input {...register("name", { required: true })} placeholder={t("classNamePlaceholder")} data-testid="input-class-name" />
               {errors.name && <p className="text-xs text-destructive">{t("required")}</p>}
             </div>
-            <div className="grid grid-cols-2 gap-3 text-inline-start">
+            <div className="grid grid-cols-2 gap-3 text-start">
               <div className="space-y-1.5">
                 <Label>{t("gradeLevel")}</Label>
                 <Input type="number" {...register("gradeLevel", { required: true, min: 1, max: 12 })} placeholder={t("gradePlaceholder")} data-testid="input-grade-level" />
@@ -151,7 +151,7 @@ export default function AdminClasses() {
                 <Input {...register("academicYear", { required: true })} placeholder={t("yearPlaceholder")} data-testid="input-academic-year" />
               </div>
             </div>
-            <div className="space-y-1.5 text-inline-start">
+            <div className="space-y-1.5 text-start">
               <Label className="flex items-center gap-1.5 text-xs font-semibold">
                 <UserCheck className="h-3.5 w-3.5 text-muted-foreground" />
                 {t("homeroomTeacher")}

@@ -126,7 +126,7 @@ function SubjectFormFields({
             placeholder="ex: MATH-G5"
             value={form.code}
             onChange={e => setForm(f => ({ ...f, code: e.target.value }))}
-            className="uppercase font-mono text-inline-start"
+            className="uppercase font-mono text-start"
             maxLength={12}
             required
           />
@@ -140,7 +140,7 @@ function SubjectFormFields({
             value={form.gradeLevel}
             onValueChange={v => setForm(f => ({ ...f, gradeLevel: v }))}
           >
-            <SelectTrigger id="grade" className="text-inline-start">
+            <SelectTrigger id="grade" className="text-start">
               <SelectValue placeholder={t("gradePlaceholder")} />
             </SelectTrigger>
             <SelectContent>
@@ -161,7 +161,7 @@ function SubjectFormFields({
           placeholder="ex: Mathématiques"
           value={form.name}
           onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-          className="text-inline-start"
+          className="text-start"
           required
         />
       </div>
@@ -175,7 +175,7 @@ function SubjectFormFields({
           value={form.teacherId}
           onValueChange={v => setForm(f => ({ ...f, teacherId: v === "none" ? "" : v }))}
         >
-          <SelectTrigger id="teacher" className="text-inline-start">
+          <SelectTrigger id="teacher" className="text-start">
             <SelectValue placeholder={t("chooseTeacher")} />
           </SelectTrigger>
           <SelectContent>
@@ -200,7 +200,7 @@ function SubjectFormFields({
           value={form.description}
           onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
           rows={3}
-          className="resize-none text-inline-start"
+          className="resize-none text-start"
         />
       </div>
     </div>
@@ -431,7 +431,7 @@ export default function AdminSubjects() {
     <div className="space-y-6 pb-8">
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div className="text-inline-start">
+        <div className="text-start">
           <h1 className="text-2xl font-bold tracking-tight">{t("subjectsTitle")}</h1>
           <p className="text-muted-foreground text-sm mt-0.5">{t("subjectsSubtitle")}</p>
         </div>
@@ -483,13 +483,13 @@ export default function AdminSubjects() {
           <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder={t("searchSubjects")}
-            className="ps-9 rounded-xl text-inline-start"
+            className="ps-9 rounded-xl text-start"
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
         </div>
         <Select value={gradeFilter} onValueChange={setGradeFilter}>
-          <SelectTrigger className="w-40 rounded-xl text-inline-start">
+          <SelectTrigger className="w-40 rounded-xl text-start">
             <GraduationCap className="h-4 w-4 me-1.5 text-muted-foreground" />
             <SelectValue placeholder={t("allLevels")} />
           </SelectTrigger>
@@ -499,7 +499,7 @@ export default function AdminSubjects() {
           </SelectContent>
         </Select>
         <Select value={sortKey} onValueChange={v => setSortKey(v as SortKey)}>
-          <SelectTrigger className="w-40 rounded-xl text-inline-start">
+          <SelectTrigger className="w-40 rounded-xl text-start">
             <ArrowUpDown className="h-4 w-4 me-1.5 text-muted-foreground" />
             <SelectValue />
           </SelectTrigger>
@@ -555,7 +555,7 @@ export default function AdminSubjects() {
                     <div className="p-5 flex flex-col flex-1">
                       {/* Title + controls row */}
                       <div className="flex items-start justify-between gap-2">
-                        <h3 className="font-bold text-[15px] leading-snug text-foreground flex-1 min-w-0 text-inline-start">
+                        <h3 className="font-bold text-[15px] leading-snug text-foreground flex-1 min-w-0 text-start">
                           {subject.name}
                         </h3>
                         <div className="flex items-center gap-1 shrink-0 -mt-0.5">
@@ -575,10 +575,10 @@ export default function AdminSubjects() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-44">
-                              <DropdownMenuItem onClick={() => openEdit(subject)} className="gap-2 text-inline-start">
+                              <DropdownMenuItem onClick={() => openEdit(subject)} className="gap-2 text-start">
                                 <Pencil className="h-3.5 w-3.5" />{t("edit")}
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleToggleActive(subject)} className="gap-2 text-inline-start">
+                              <DropdownMenuItem onClick={() => handleToggleActive(subject)} className="gap-2 text-start">
                                 {subject.isActive
                                   ? <><ToggleLeft className="h-3.5 w-3.5" />{t("deactivate")}</>
                                   : <><ToggleRight className="h-3.5 w-3.5" />{t("activateSubject")}</>
@@ -587,7 +587,7 @@ export default function AdminSubjects() {
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 onClick={() => setDeleteSubject(subject)}
-                                className="gap-2 text-red-600 focus:text-red-600 focus:bg-red-50 text-inline-start"
+                                className="gap-2 text-red-600 focus:text-red-600 focus:bg-red-50 text-start"
                               >
                                 <Trash2 className="h-3.5 w-3.5" />{t("delete")}
                               </DropdownMenuItem>
@@ -597,7 +597,7 @@ export default function AdminSubjects() {
                       </div>
 
                       {/* Grade + code — one line */}
-                      <p className="text-[11px] text-muted-foreground mt-1 font-medium text-inline-start">
+                      <p className="text-[11px] text-muted-foreground mt-1 font-medium text-start">
                         {t("grade")} {subject.gradeLevel}
                         <span className="mx-1.5 opacity-30">·</span>
                         <span className="font-mono">{subject.code}</span>
@@ -702,7 +702,7 @@ export default function AdminSubjects() {
  
           <div className="flex-1 overflow-y-auto space-y-4 pt-2">
             {/* Format guide */}
-            <div className="rounded-xl border border-border bg-muted/40 p-4 space-y-2 text-inline-start">
+            <div className="rounded-xl border border-border bg-muted/40 p-4 space-y-2 text-start">
               <div className="flex items-center justify-between">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t("requiredFormat")}</p>
                 <button
@@ -751,7 +751,7 @@ export default function AdminSubjects() {
                       <thead>
                         <tr className="bg-muted/60 border-b border-border">
                           {["#", t("subjectCode"), t("subjectName"), t("grade"), t("subjectDescription"), t("teacher"), ""].map(h => (
-                            <th key={h} className="px-3 py-2 text-inline-start font-semibold text-muted-foreground whitespace-nowrap">{h}</th>
+                            <th key={h} className="px-3 py-2 text-start font-semibold text-muted-foreground whitespace-nowrap">{h}</th>
                           ))}
                         </tr>
                       </thead>
@@ -833,11 +833,11 @@ export default function AdminSubjects() {
       <AlertDialog open={!!deleteSubject} onOpenChange={v => { if (!v) setDeleteSubject(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-inline-start">
+            <AlertDialogTitle className="flex items-center gap-2 text-start">
               <Trash2 className="h-5 w-5 text-red-500" />
               {t("delete")} « {deleteSubject?.name} » ؟
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-inline-start">
+            <AlertDialogDescription className="text-start">
               {(deleteSubject?.lessonCount ?? 0) > 0 ? (
                 <span className="text-amber-700 font-medium">
                   ⚠️ {t("subjectContains")} {deleteSubject?.lessonCount} {t("lesson")}. 
